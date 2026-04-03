@@ -8,13 +8,33 @@ Pod::Spec.new do |s|
     freerdp_prefix = '/opt/homebrew/opt/freerdp'
   end
 
+  # Allow explicit override first (e.g. FREERDP_EXCLUDED_ARCHS=x86_64 or arm64).
+  excluded_archs = ENV['FREERDP_EXCLUDED_ARCHS']
+
+  # Auto-detect missing architecture slice from the local FreeRDP dylib.
+  if excluded_archs.nil? || excluded_archs.empty?
+    dylib = File.join(freerdp_prefix, 'lib', 'libfreerdp3.3.dylib')
+    arch_info = File.exist?(dylib) ? `lipo -info "#{dylib}" 2>/dev/null`.to_s : ''
+
+    has_arm64 = arch_info.include?('arm64')
+    has_x86_64 = arch_info.include?('x86_64')
+
+    if has_arm64 && !has_x86_64
+      excluded_archs = 'x86_64'
+    elsif has_x86_64 && !has_arm64
+      excluded_archs = 'arm64'
+    else
+      excluded_archs = ''
+    end
+  end
+
   include_flags = "-I#{freerdp_prefix}/include/freerdp3 -I#{freerdp_prefix}/include/winpr3"
   ld_flags = "-L#{freerdp_prefix}/lib -Wl,-rpath,#{freerdp_prefix}/lib -lfreerdp3 -lfreerdp-client3 -lwinpr3"
 
   s.name             = 'frdp'
   s.version          = '0.0.1'
-  s.summary          = 'Flutter plugin for RDP connections'
-  s.description      = 'A Flutter plugin for RDP connections.'
+  s.summary          = 'Flutter plugin for Remote Desktop Protocol (RDP) connections'
+  s.description      = 'A Flutter plugin for Remote Desktop Protocol (RDP) connections.'
   s.homepage         = 'https://github.com/riccardo-tralli/frdp'
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Riccardo Tralli' => '' }
@@ -37,10 +57,10 @@ Pod::Spec.new do |s|
     'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{include_flags}",
     'OTHER_LDFLAGS' => "$(inherited) #{ld_flags}",
     'HEADER_SEARCH_PATHS' => "$(inherited) #{freerdp_prefix}/include",
-    'EXCLUDED_ARCHS[sdk=macosx*]' => 'x86_64'
+    'EXCLUDED_ARCHS[sdk=macosx*]' => excluded_archs
   }
   s.user_target_xcconfig = {
-    'EXCLUDED_ARCHS[sdk=macosx*]' => 'x86_64'
+    'EXCLUDED_ARCHS[sdk=macosx*]' => excluded_archs
   }
   s.swift_version = '5.0'
 end
