@@ -1,0 +1,28 @@
+const String kFrdpChannelName = "frdp";
+
+const String kGetPlatformVersionMethod = "getPlatformVersion";
+const String kConnectMethod = "connect";
+const String kDisconnectMethod = "disconnect";
+const String kGetConnectionStateMethod = "getConnectionState";
+const String kSendPointerEventMethod = "sendPointerEvent";
+const String kSendKeyEventMethod = "sendKeyEvent";
+
+const String kSessionIdArg = "sessionId";
+const String kStateArg = "state";
+const String kHostArg = "host";
+const String kPortArg = "port";
+const String kUsernameArg = "username";
+const String kPasswordArg = "password";
+const String kDomainArg = "domain";
+const String kIgnoreCertificateArg = "ignoreCertificate";
+const String kPerformanceProfileArg = "performanceProfile";
+const String kXArg = "x";
+const String kYArg = "y";
+const String kButtonsArg = "buttons";
+const String kKeyCodeArg = "keyCode";
+const String kIsDownArg = "isDown";
+
+const String kDisconnectedState = "disconnected";
+const String kConnectingState = "connecting";
+const String kConnectedState = "connected";
+const String kErrorState = "error";
