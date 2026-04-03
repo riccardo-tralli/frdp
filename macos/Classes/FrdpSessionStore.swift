@@ -14,22 +14,8 @@ final class FrdpSessionStore {
     return FrdpChannel.State.disconnected
   }
 
-  func createSession(
-    host: String,
-    port: Int,
-    username: String,
-    password: String,
-    domain: String?
-  ) -> FrdpSession {
-    let session = FrdpSession(
-      host: host,
-      port: port,
-      username: username,
-      password: password,
-      domain: domain
-    )
+  func addSession(_ session: FrdpSession) {
     sessions[session.sessionId] = session
-    return session
   }
 
   func getSession(id: String) -> FrdpSession? {

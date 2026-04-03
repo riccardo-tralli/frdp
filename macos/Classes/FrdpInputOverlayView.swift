@@ -4,6 +4,7 @@ import FlutterMacOS
 final class FrdpInputOverlayView: NSView {
   private let engine: FrdpRdpEngineAdapter
   private var trackingAreaRef: NSTrackingArea?
+  private var previousAcceptsMouseMovedEvents: Bool?
   private var tapCandidateActive = false
   private var tapCandidateMoved = false
   private var tapCandidateStartTime: TimeInterval = 0
@@ -43,9 +44,21 @@ final class FrdpInputOverlayView: NSView {
     trackingAreaRef = newArea
   }
 
+  override func viewWillMove(toWindow newWindow: NSWindow?) {
+    if let window, let previousAcceptsMouseMovedEvents {
+      window.acceptsMouseMovedEvents = previousAcceptsMouseMovedEvents
+      self.previousAcceptsMouseMovedEvents = nil
+    }
+    super.viewWillMove(toWindow: newWindow)
+  }
+
   override func viewDidMoveToWindow() {
     super.viewDidMoveToWindow()
-    window?.acceptsMouseMovedEvents = true
+    guard let window else { return }
+    if previousAcceptsMouseMovedEvents == nil {
+      previousAcceptsMouseMovedEvents = window.acceptsMouseMovedEvents
+    }
+    window.acceptsMouseMovedEvents = true
   }
 
   // MARK: - Mouse events

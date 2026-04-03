@@ -95,10 +95,17 @@ class FrdpEngineCore {
                bool ignoreCertificate,
                const std::string& performanceProfile,
                std::string& errorMessage) {
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+
     if (running_.load()) {
       errorMessage = "RDP session is already running.";
       return false;
     }
+
+    connected_.store(false);
+    lastButtons_ = 0;
+    lastPointerX_ = 0;
+    lastPointerY_ = 0;
 
     std::string normalizedHost = host;
     if (!normalizeHost(normalizedHost, errorMessage)) {
@@ -128,7 +135,6 @@ class FrdpEngineCore {
     auto* settings = (instance_->context != nullptr) ? instance_->context->settings : nullptr;
     if (settings == nullptr) {
       errorMessage = "FreeRDP settings are not initialized.";
-      freerdp_context_free(instance_.get());
       instance_.reset();
       return false;
     }
@@ -235,7 +241,6 @@ class FrdpEngineCore {
 
     if (!settingsOk) {
       errorMessage = "Unable to configure FreeRDP settings.";
-      freerdp_context_free(instance_.get());
       instance_.reset();
       return false;
     }
@@ -245,14 +250,13 @@ class FrdpEngineCore {
     if (!freerdp_connect(instance_.get())) {
       errorMessage = "freerdp_connect failed.";
       unregisterInstanceOwner(instance_.get());
-      freerdp_context_free(instance_.get());
       instance_.reset();
       return false;
     }
-  running_.store(true);
-  worker_ = std::thread([this]() { runLoop(); });
-  connected_ = true;
-  return true;
+    running_.store(true);
+    worker_ = std::thread([this]() { runLoop(); });
+    connected_.store(true);
+    return true;
 #else
   (void)host;
   (void)port;
@@ -268,20 +272,26 @@ class FrdpEngineCore {
 
   void disconnect() {
     const bool wasRunning = running_.exchange(false);
+
+    {
+      std::lock_guard<std::mutex> stateLock(stateMutex_);
+#if FRDP_HAS_FREERDP
+      if (instance_) {
+        freerdp_disconnect(instance_.get());
+        unregisterInstanceOwner(instance_.get());
+        instance_.reset();
+      }
+#endif
+
+      connected_.store(false);
+      lastButtons_ = 0;
+      lastPointerX_ = 0;
+      lastPointerY_ = 0;
+    }
+
     if (wasRunning && worker_.joinable()) {
       worker_.join();
     }
-
-#if FRDP_HAS_FREERDP
-    if (instance_) {
-      freerdp_disconnect(instance_.get());
-      unregisterInstanceOwner(instance_.get());
-      freerdp_context_free(instance_.get());
-      instance_.reset();
-    }
-#endif
-
-    connected_ = false;
   }
 
   void setFrameCallback(FrameCallback callback) {
@@ -290,11 +300,12 @@ class FrdpEngineCore {
   }
 
   void sendPointer(double x, double y, int buttons, double viewWidth, double viewHeight) {
-    if (!connected_) {
+    if (!connected_.load()) {
       return;
     }
 
 #if FRDP_HAS_FREERDP
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
     if (!instance_) return;
     auto* gdi = instance_->context != nullptr ? instance_->context->gdi : nullptr;
     auto* input = instance_->context->input;
@@ -332,11 +343,12 @@ class FrdpEngineCore {
   }
 
   void sendScroll(double deltaX, double deltaY) {
-    if (!connected_) {
+    if (!connected_.load()) {
       return;
     }
 
 #if FRDP_HAS_FREERDP
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
     if (!instance_) return;
     auto* gdi = instance_->context != nullptr ? instance_->context->gdi : nullptr;
     auto* input = instance_->context->input;
@@ -364,11 +376,12 @@ class FrdpEngineCore {
   }
 
   void sendKey(int keyCode, bool isDown) {
-    if (!connected_) {
+    if (!connected_.load()) {
       return;
     }
 
 #if FRDP_HAS_FREERDP
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
     if (!instance_) return;
     auto* input = instance_->context->input;
     if (!input) return;
@@ -463,11 +476,12 @@ class FrdpEngineCore {
   }
 
   void sendMacKey(int keyCode, bool isDown) {
-    if (!connected_) {
+    if (!connected_.load()) {
       return;
     }
 
 #if FRDP_HAS_FREERDP
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
     if (!instance_) return;
     auto* input = instance_->context->input;
     if (!input) return;
@@ -585,7 +599,7 @@ class FrdpEngineCore {
 #endif
   }
 
-  bool connected() const { return connected_; }
+  bool connected() const { return connected_.load(); }
 
  private:
   static bool normalizeHost(std::string& host, std::string& errorMessage) {
@@ -653,10 +667,14 @@ class FrdpEngineCore {
   void runLoop() {
     while (running_.load()) {
 #if FRDP_HAS_FREERDP
-      if (instance_ != nullptr) {
-        if (!freerdp_check_fds(instance_.get())) {
-          running_.store(false);
-          break;
+      {
+        std::lock_guard<std::mutex> stateLock(stateMutex_);
+        if (instance_ != nullptr) {
+          if (!freerdp_check_fds(instance_.get())) {
+            connected_.store(false);
+            running_.store(false);
+            break;
+          }
         }
       }
 
@@ -786,9 +804,10 @@ class FrdpEngineCore {
 
   std::thread worker_;
   std::atomic<bool> running_{false};
+  std::atomic<bool> connected_{false};
+  std::mutex stateMutex_;
   std::mutex frameCallbackMutex_;
   FrameCallback frameCallback_;
-  bool connected_ = false;
   int lastButtons_ = 0;
   UINT16 lastPointerX_ = 0;
   UINT16 lastPointerY_ = 0;

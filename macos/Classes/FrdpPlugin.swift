@@ -61,13 +61,13 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
       return
     }
 
-    let session = sessionStore.createSession(
+    let session = FrdpSession(
       host: host,
       port: port,
       username: username,
-      password: password,
       domain: args[FrdpChannel.Arg.domain] as? String
     )
+    session.state = FrdpChannel.State.connecting
 
     do {
       let profile = (args[FrdpChannel.Arg.performanceProfile] as? String) ?? "medium"
@@ -87,6 +87,7 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
     }
 
     session.state = FrdpChannel.State.connected
+    sessionStore.addSession(session)
     result([FrdpChannel.Arg.sessionId: session.sessionId, "state": session.state])
   }
 
