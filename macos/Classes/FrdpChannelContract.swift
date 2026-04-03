@@ -20,6 +20,7 @@ enum FrdpChannel {
     static let domain             = "domain"
     static let ignoreCertificate  = "ignoreCertificate"
     static let performanceProfile = "performanceProfile"
+    static let connectTimeoutMs   = "connectTimeoutMs"
     static let x                  = "x"
     static let y                  = "y"
     static let buttons            = "buttons"

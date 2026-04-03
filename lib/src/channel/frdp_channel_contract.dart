@@ -16,6 +16,7 @@ const String kPasswordArg = "password";
 const String kDomainArg = "domain";
 const String kIgnoreCertificateArg = "ignoreCertificate";
 const String kPerformanceProfileArg = "performanceProfile";
+const String kConnectTimeoutMsArg = "connectTimeoutMs";
 const String kXArg = "x";
 const String kYArg = "y";
 const String kButtonsArg = "buttons";

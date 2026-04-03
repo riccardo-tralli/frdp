@@ -9,6 +9,7 @@ class FrdpConnectionConfig {
   final String? domain;
   final bool ignoreCertificate;
   final FrdpPerformanceProfile performanceProfile;
+  final int? connectTimeoutMs;
 
   const FrdpConnectionConfig({
     required this.host,
@@ -18,6 +19,7 @@ class FrdpConnectionConfig {
     this.domain,
     this.ignoreCertificate = false,
     this.performanceProfile = FrdpPerformanceProfile.medium,
+    this.connectTimeoutMs,
   });
 
   Map<String, dynamic> toMap() {
@@ -45,6 +47,13 @@ class FrdpConnectionConfig {
         "Password cannot be empty",
       );
     }
+    if (connectTimeoutMs != null && connectTimeoutMs! <= 0) {
+      throw ArgumentError.value(
+        connectTimeoutMs,
+        kConnectTimeoutMsArg,
+        "Timeout must be > 0",
+      );
+    }
 
     return <String, dynamic>{
       kHostArg: host,
@@ -54,6 +63,7 @@ class FrdpConnectionConfig {
       kDomainArg: domain,
       kIgnoreCertificateArg: ignoreCertificate,
       kPerformanceProfileArg: performanceProfile.name,
+      if (connectTimeoutMs != null) kConnectTimeoutMsArg: connectTimeoutMs,
     };
   }
 }

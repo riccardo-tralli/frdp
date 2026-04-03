@@ -4,6 +4,7 @@ import FlutterMacOS
 public class FrdpPlugin: NSObject, FlutterPlugin {
   private let sessionStore = FrdpSessionStore()
   private let connectQueue = DispatchQueue(label: "it.riccardotralli.frdp.connect", qos: .userInitiated)
+  private var pendingConnectCancels: [String: () -> Void] = [:]
 
   // MARK: - Registration
 
@@ -71,6 +72,10 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
     let domain = args[FrdpChannel.Arg.domain] as? String
     let profile = (args[FrdpChannel.Arg.performanceProfile] as? String) ?? "medium"
     let ignoreCertificate = (args[FrdpChannel.Arg.ignoreCertificate] as? Bool) ?? false
+    let timeoutMs = min(max(args[FrdpChannel.Arg.connectTimeoutMs] as? Int ?? 15_000, 1_000), 120_000)
+    let attemptId = UUID().uuidString
+    let resolveLock = NSLock()
+    var didResolve = false
 
     session.engine.connectionStateDidChange = { [weak session] connected in
       guard let session else { return }
@@ -78,6 +83,49 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
     }
 
     session.state = FrdpChannel.State.connecting
+
+    let timeoutWorkItem = DispatchWorkItem { [weak self, weak session] in
+      resolveLock.lock()
+      if didResolve {
+        resolveLock.unlock()
+        return
+      }
+      didResolve = true
+      resolveLock.unlock()
+
+      self?.pendingConnectCancels.removeValue(forKey: attemptId)
+      session?.state = FrdpChannel.State.error
+      result(
+        FlutterError(
+          code: "RDP_CONNECT_TIMEOUT",
+          message: "RDP connect timed out after \(timeoutMs)ms.",
+          details: nil
+        )
+      )
+    }
+
+    pendingConnectCancels[attemptId] = { [weak self, weak session] in
+      resolveLock.lock()
+      if didResolve {
+        resolveLock.unlock()
+        return
+      }
+      didResolve = true
+      resolveLock.unlock()
+
+      timeoutWorkItem.cancel()
+      self?.pendingConnectCancels.removeValue(forKey: attemptId)
+      session?.state = FrdpChannel.State.disconnected
+      result(
+        FlutterError(
+          code: "RDP_CONNECT_CANCELED",
+          message: "RDP connect canceled.",
+          details: nil
+        )
+      )
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(timeoutMs), execute: timeoutWorkItem)
 
     connectQueue.async { [weak self] in
       do {
@@ -93,12 +141,34 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
 
         DispatchQueue.main.async {
           guard let self else { return }
+
+          resolveLock.lock()
+          if didResolve {
+            resolveLock.unlock()
+            session.engine.disconnect()
+            return
+          }
+          didResolve = true
+          resolveLock.unlock()
+
+          timeoutWorkItem.cancel()
+          self.pendingConnectCancels.removeValue(forKey: attemptId)
           session.state = FrdpChannel.State.connected
           self.sessionStore.addSession(session)
           result([FrdpChannel.Arg.sessionId: session.sessionId, "state": session.state])
         }
       } catch {
         DispatchQueue.main.async {
+          resolveLock.lock()
+          if didResolve {
+            resolveLock.unlock()
+            return
+          }
+          didResolve = true
+          resolveLock.unlock()
+
+          timeoutWorkItem.cancel()
+          self?.pendingConnectCancels.removeValue(forKey: attemptId)
           session.state = FrdpChannel.State.error
           result(FlutterError(code: "RDP_CONNECT_FAILED", message: error.localizedDescription, details: nil))
         }
@@ -111,6 +181,9 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
     if let sessionId, !sessionId.isEmpty {
       sessionStore.removeSession(id: sessionId)
     } else {
+      let cancelPending = Array(pendingConnectCancels.values)
+      pendingConnectCancels.removeAll()
+      cancelPending.forEach { $0() }
       sessionStore.removeAll()
     }
     result(nil)
