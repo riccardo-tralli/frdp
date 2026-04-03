@@ -3,6 +3,7 @@ import FlutterMacOS
 
 public class FrdpPlugin: NSObject, FlutterPlugin {
   private let sessionStore = FrdpSessionStore()
+  private let connectQueue = DispatchQueue(label: "it.riccardotralli.frdp.connect", qos: .userInitiated)
 
   // MARK: - Registration
 
@@ -67,6 +68,9 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
       username: username,
       domain: args[FrdpChannel.Arg.domain] as? String
     )
+    let domain = args[FrdpChannel.Arg.domain] as? String
+    let profile = (args[FrdpChannel.Arg.performanceProfile] as? String) ?? "medium"
+    let ignoreCertificate = (args[FrdpChannel.Arg.ignoreCertificate] as? Bool) ?? false
 
     session.engine.connectionStateDidChange = { [weak session] connected in
       guard let session else { return }
@@ -75,26 +79,31 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
 
     session.state = FrdpChannel.State.connecting
 
-    do {
-      let profile = (args[FrdpChannel.Arg.performanceProfile] as? String) ?? "medium"
-      try session.engine.connect(
-        withHost: host,
-        port: port,
-        username: username,
-        password: password,
-        domain: args[FrdpChannel.Arg.domain] as? String,
-        ignoreCertificate: (args[FrdpChannel.Arg.ignoreCertificate] as? Bool) ?? false,
-        performanceProfile: profile
-      )
-    } catch {
-      session.state = FrdpChannel.State.error
-      result(FlutterError(code: "RDP_CONNECT_FAILED", message: error.localizedDescription, details: nil))
-      return
-    }
+    connectQueue.async { [weak self] in
+      do {
+        try session.engine.connect(
+          withHost: host,
+          port: port,
+          username: username,
+          password: password,
+          domain: domain,
+          ignoreCertificate: ignoreCertificate,
+          performanceProfile: profile
+        )
 
-    session.state = FrdpChannel.State.connected
-    sessionStore.addSession(session)
-    result([FrdpChannel.Arg.sessionId: session.sessionId, "state": session.state])
+        DispatchQueue.main.async {
+          guard let self else { return }
+          session.state = FrdpChannel.State.connected
+          self.sessionStore.addSession(session)
+          result([FrdpChannel.Arg.sessionId: session.sessionId, "state": session.state])
+        }
+      } catch {
+        DispatchQueue.main.async {
+          session.state = FrdpChannel.State.error
+          result(FlutterError(code: "RDP_CONNECT_FAILED", message: error.localizedDescription, details: nil))
+        }
+      }
+    }
   }
 
   private func handleDisconnect(call: FlutterMethodCall, result: @escaping FlutterResult) {
