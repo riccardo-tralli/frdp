@@ -1,5 +1,6 @@
 #include "FrdpEngineCore.hpp"
 #include "FrdpInputMapper.hpp"
+#include "FrdpPerformanceProfiles.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -124,28 +125,12 @@ bool FrdpEngineCore::connect(const std::string& host,
   ok = ok && freerdp_settings_set_string(settings, FreeRDP_Password, password.c_str());
   if (!domain.empty()) ok = ok && freerdp_settings_set_string(settings, FreeRDP_Domain, domain.c_str());
 
-  // Performance profile
-  std::string profile = performanceProfile;
-  std::transform(profile.begin(), profile.end(), profile.begin(),
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  const FrdpPerformanceSettings perf = ResolvePerformanceSettings(performanceProfile);
 
-  UINT32 desktopW = 1280, desktopH = 720;
-  UINT32 connType = CONNECTION_TYPE_BROADBAND_LOW;
-  BOOL noWallpaper = TRUE, noFullWindowDrag = TRUE, noMenuAnims = TRUE;
-  BOOL noThemes = TRUE, noCompose = FALSE, noFontSmooth = FALSE;
-
-  if (profile == "low") {
-    desktopW = 1024; desktopH = 576; connType = CONNECTION_TYPE_MODEM;
-  } else if (profile == "high") {
-    desktopW = 1600; desktopH = 900; connType = CONNECTION_TYPE_LAN;
-    noWallpaper = noFullWindowDrag = noMenuAnims = noThemes = FALSE;
-    noCompose = noFontSmooth = TRUE;
-  }
-
-  setU32(FreeRDP_DesktopWidth,  desktopW);
-  setU32(FreeRDP_DesktopHeight, desktopH);
+  setU32(FreeRDP_DesktopWidth,  perf.desktopWidth);
+  setU32(FreeRDP_DesktopHeight, perf.desktopHeight);
   setU32(FreeRDP_ColorDepth, 32);
-  setU32(FreeRDP_ConnectionType, connType);
+  setU32(FreeRDP_ConnectionType, perf.connectionType);
   setU16(FreeRDP_SupportedColorDepths,
          static_cast<UINT16>(RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT));
 
@@ -184,12 +169,12 @@ bool FrdpEngineCore::connect(const std::string& host,
   setBool(FreeRDP_GfxAVC444v2,             FALSE);
 
   // Experience flags
-  setBool(FreeRDP_DisableWallpaper,      noWallpaper);
-  setBool(FreeRDP_DisableFullWindowDrag, noFullWindowDrag);
-  setBool(FreeRDP_DisableMenuAnims,      noMenuAnims);
-  setBool(FreeRDP_DisableThemes,         noThemes);
-  setBool(FreeRDP_AllowDesktopComposition, noCompose);
-  setBool(FreeRDP_AllowFontSmoothing,      noFontSmooth);
+  setBool(FreeRDP_DisableWallpaper,        perf.disableWallpaper);
+  setBool(FreeRDP_DisableFullWindowDrag,   perf.disableFullWindowDrag);
+  setBool(FreeRDP_DisableMenuAnims,        perf.disableMenuAnims);
+  setBool(FreeRDP_DisableThemes,           perf.disableThemes);
+  setBool(FreeRDP_AllowDesktopComposition, perf.allowDesktopComposition);
+  setBool(FreeRDP_AllowFontSmoothing,      perf.allowFontSmoothing);
 
   if (!ok) {
     errorMessage = "Unable to configure FreeRDP settings.";
