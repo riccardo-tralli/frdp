@@ -17,6 +17,7 @@ class IconChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
+    constraints: BoxConstraints(minHeight: 52),
     padding: const EdgeInsets.symmetric(
       horizontal: Spaces.small,
       vertical: Spaces.extraSmall,
@@ -28,8 +29,8 @@ class IconChip extends StatelessWidget {
     child: Row(
       spacing: Spaces.extraSmall,
       children: [
-        HugeIcon(icon: icon, color: type.color, size: 26),
-        Text(label, style: TextStyle(color: type.color)),
+        HugeIcon(icon: icon, color: type.color, size: 32),
+        Text(label, style: TextStyle(color: type.color, fontSize: 18)),
       ],
     ),
   );

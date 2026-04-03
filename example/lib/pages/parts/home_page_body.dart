@@ -16,7 +16,7 @@ Widget _homePageBody({
 }) => Row(
   children: [
     Expanded(
-      flex: 2,
+      flex: 3,
       child: _sideMenu(
         context: context,
         state: state,
@@ -34,7 +34,7 @@ Widget _homePageBody({
       ),
     ),
     Expanded(
-      flex: 8,
+      flex: 7,
       child: _rdpView(
         sessionId: (state is RdpSessionConnectedState) ? state.id : "",
       ),

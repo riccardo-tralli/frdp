@@ -20,9 +20,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final TextEditingController _hostController = TextEditingController(
-    text: "192.168.1.10",
-  );
+  final TextEditingController _hostController = TextEditingController();
   final TextEditingController _portController = TextEditingController(
     text: "3389",
   );

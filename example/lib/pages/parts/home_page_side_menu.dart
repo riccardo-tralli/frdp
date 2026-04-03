@@ -15,10 +15,10 @@ Widget _sideMenu({
   required Function() onButtonPressed,
 }) => Padding(
   padding: const EdgeInsets.only(left: Spaces.medium, right: Spaces.small),
-  child: Column(
-    spacing: Spaces.medium,
+  child: ListView(
     children: [
       _badge(state),
+      SizedBox(height: Spaces.extraLarge),
       _form(
         hostController,
         portController,
@@ -29,9 +29,10 @@ Widget _sideMenu({
         onIgnoreCertificateChanged,
         performanceProfile,
         onPerformanceProfileChanged,
-        onButtonPressed,
         state,
       ),
+      SizedBox(height: Spaces.extraLarge),
+      _button(onButtonPressed, state),
     ],
   ),
 );
@@ -75,61 +76,87 @@ Widget _form(
   Function() onIgnoreCertificateChanged,
   FrdpPerformanceProfile performanceProfile,
   Function(FrdpPerformanceProfile) onPerformanceProfileChanged,
-  Function() onButtonPressed,
   RdpSessionState state,
-) => Column(
-  children: [
-    TextFormField(
-      controller: hostController,
-      decoration: const InputDecoration(labelText: "Host/IP"),
-    ),
-    TextFormField(
-      controller: portController,
-      decoration: const InputDecoration(labelText: "Port"),
-      keyboardType: TextInputType.number,
-    ),
-    TextFormField(
-      controller: usernameController,
-      decoration: const InputDecoration(labelText: "Username"),
-    ),
-    TextFormField(
-      controller: passwordController,
-      decoration: const InputDecoration(labelText: "Password"),
-      obscureText: true,
-    ),
-    TextFormField(
-      controller: domainController,
-      decoration: const InputDecoration(labelText: "Domain (optional)"),
-    ),
-    CheckboxListTile(
-      value: ignoreCertificate,
-      onChanged: (_) => onIgnoreCertificateChanged(),
-      title: const Text("Ignore SSL certificate validation"),
-      // controlAffinity: ListTileControlAffinity.leading,
-      contentPadding: EdgeInsets.zero,
-    ),
-    DropdownButtonFormField<FrdpPerformanceProfile>(
-      initialValue: performanceProfile,
-      decoration: const InputDecoration(labelText: "Performance Profile"),
-      items: const [
-        DropdownMenuItem(
-          value: FrdpPerformanceProfile.low,
-          child: Text("Low (more fluid)"),
+) => FocusTraversalGroup(
+  policy: OrderedTraversalPolicy(),
+  child: Column(
+    spacing: Spaces.medium,
+    children: [
+      TextFormField(
+        enabled: state is! RdpSessionConnectedState,
+        controller: hostController,
+        decoration: const InputDecoration(
+          icon: Text("Host"),
+          hintText: "192.168.1.1",
         ),
-        DropdownMenuItem(
-          value: FrdpPerformanceProfile.medium,
-          child: Text("Medium"),
+        autofocus: true,
+      ),
+      TextFormField(
+        enabled: state is! RdpSessionConnectedState,
+        controller: portController,
+        decoration: const InputDecoration(icon: Text("Port"), hintText: "3389"),
+        keyboardType: TextInputType.number,
+      ),
+      TextFormField(
+        enabled: state is! RdpSessionConnectedState,
+        controller: usernameController,
+        decoration: const InputDecoration(
+          icon: Text("Username"),
+          hintText: "riccardo.tralli",
         ),
-        DropdownMenuItem(
-          value: FrdpPerformanceProfile.high,
-          child: Text("High (more detailed)"),
+      ),
+      TextFormField(
+        enabled: state is! RdpSessionConnectedState,
+        controller: passwordController,
+        decoration: const InputDecoration(
+          icon: Text("Password"),
+          hintText: "mysecretpassword",
         ),
-      ],
-      onChanged: (value) => onPerformanceProfileChanged(value!),
-    ),
-    ElevatedButton(
-      onPressed: () => onButtonPressed(),
-      child: Text(state is RdpSessionConnectedState ? "Disconnect" : "Connect"),
-    ),
-  ],
+        obscureText: true,
+      ),
+      TextFormField(
+        enabled: state is! RdpSessionConnectedState,
+        controller: domainController,
+        decoration: const InputDecoration(
+          icon: Text("Domain"),
+          hintText: "mydomain",
+        ),
+      ),
+      Divider(),
+      SwitchListTile(
+        value: ignoreCertificate,
+        onChanged: (_) => state is! RdpSessionConnectedState
+            ? onIgnoreCertificateChanged()
+            : null,
+        title: const Text("Ignore SSL validation"),
+      ),
+      DropdownButtonFormField<FrdpPerformanceProfile>(
+        initialValue: performanceProfile,
+        decoration: const InputDecoration(icon: Text("Performance Profile")),
+        items: const [
+          DropdownMenuItem(
+            value: FrdpPerformanceProfile.low,
+            child: Text("Low (more fluid)"),
+          ),
+          DropdownMenuItem(
+            value: FrdpPerformanceProfile.medium,
+            child: Text("Medium"),
+          ),
+          DropdownMenuItem(
+            value: FrdpPerformanceProfile.high,
+            child: Text("High (more detailed)"),
+          ),
+        ],
+        onChanged: (value) => onPerformanceProfileChanged(value!),
+      ),
+    ],
+  ),
+);
+
+Widget _button(Function() onButtonPressed, RdpSessionState state) => SizedBox(
+  width: double.infinity,
+  child: FilledButton(
+    onPressed: () => onButtonPressed(),
+    child: Text(state is RdpSessionConnectedState ? "Disconnect" : "Connect"),
+  ),
 );
