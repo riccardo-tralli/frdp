@@ -209,6 +209,7 @@ bool FrdpEngineCore::connect(const std::string& host,
   running_.store(true);
   worker_ = std::thread([this]() { runLoop(); });
   connected_.store(true);
+  notifyConnectionStateChange(true);
   return true;
 
 #else
@@ -221,6 +222,7 @@ bool FrdpEngineCore::connect(const std::string& host,
 }
 
 void FrdpEngineCore::disconnect() {
+  const bool wasConnected = connected_.load();
   const bool wasRunning = running_.exchange(false);
 
   {
@@ -240,6 +242,10 @@ void FrdpEngineCore::disconnect() {
 
   if (wasRunning && worker_.joinable()) {
     worker_.join();
+  }
+
+  if (wasConnected) {
+    notifyConnectionStateChange(false);
   }
 }
 
@@ -349,18 +355,34 @@ void FrdpEngineCore::sendMacKey(int keyCode, bool isDown) {
 void FrdpEngineCore::runLoop() {
   while (running_.load()) {
 #if FRDP_HAS_FREERDP
+    bool connectionDropped = false;
     {
       std::lock_guard<std::mutex> lock(stateMutex_);
       if (instance_ && !freerdp_check_fds(instance_.get())) {
         connected_.store(false);
         running_.store(false);
-        break;
+        connectionDropped = true;
       }
+    }
+    if (connectionDropped) {
+      notifyConnectionStateChange(false);
+      break;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
 #else
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
 #endif
+  }
+}
+
+void FrdpEngineCore::notifyConnectionStateChange(bool connected) {
+  ConnectionStateCallback callback;
+  {
+    std::lock_guard<std::mutex> lock(connectionCallbackMutex_);
+    callback = connectionStateCallback_;
+  }
+  if (callback) {
+    callback(connected);
   }
 }
 

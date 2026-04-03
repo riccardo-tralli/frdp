@@ -67,6 +67,12 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
       username: username,
       domain: args[FrdpChannel.Arg.domain] as? String
     )
+
+    session.engine.connectionStateDidChange = { [weak session] connected in
+      guard let session else { return }
+      session.state = connected ? FrdpChannel.State.connected : FrdpChannel.State.disconnected
+    }
+
     session.state = FrdpChannel.State.connecting
 
     do {

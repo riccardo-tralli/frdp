@@ -35,6 +35,7 @@ class FrdpEngineCore {
   // thread with no lock held; the callee must copy the data if it needs to
   // outlive the call.
   using FrameCallback = std::function<void(const uint8_t*, int, int, int)>;
+  using ConnectionStateCallback = std::function<void(bool)>;
 
   FrdpEngineCore() = default;
   ~FrdpEngineCore() { disconnect(); }
@@ -69,6 +70,11 @@ class FrdpEngineCore {
     frameCallback_ = std::move(callback);
   }
 
+  void setConnectionStateCallback(ConnectionStateCallback callback) {
+    std::lock_guard<std::mutex> lock(connectionCallbackMutex_);
+    connectionStateCallback_ = std::move(callback);
+  }
+
   // -------------------------------------------------------------------------
   // Input
   // -------------------------------------------------------------------------
@@ -95,6 +101,7 @@ class FrdpEngineCore {
   // -------------------------------------------------------------------------
 
   void runLoop();
+  void notifyConnectionStateChange(bool connected);
 
   // -------------------------------------------------------------------------
   // FreeRDP instance registry (static, process-wide)
@@ -134,6 +141,8 @@ class FrdpEngineCore {
   std::mutex             stateMutex_;
   std::mutex             frameCallbackMutex_;
   FrameCallback          frameCallback_;
+  std::mutex             connectionCallbackMutex_;
+  ConnectionStateCallback connectionStateCallback_;
   int                    lastButtons_{0};
   uint16_t               lastPointerX_{0};
   uint16_t               lastPointerY_{0};

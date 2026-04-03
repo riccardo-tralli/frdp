@@ -3,10 +3,13 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
+
 @interface FrdpRdpEngineAdapter : NSObject
 
 @property(nonatomic, readonly) NSView *renderView;
 @property(nonatomic, readonly, getter=isConnected) BOOL connected;
+@property(nonatomic, copy, nullable) FrdpConnectionStateDidChangeBlock connectionStateDidChange;
 
 - (instancetype)init;
 

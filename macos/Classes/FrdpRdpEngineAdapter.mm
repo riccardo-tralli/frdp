@@ -60,6 +60,23 @@
     [weakRenderer submitFrameWithData:data width:w height:h stride:stride];
   });
 
+  __weak FrdpRdpEngineAdapter* weakSelf = self;
+  _core->setConnectionStateCallback([weakSelf](bool connected) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      FrdpRdpEngineAdapter* strongSelf = weakSelf;
+      if (!strongSelf) return;
+
+      strongSelf.connected = connected ? YES : NO;
+      if (!connected) {
+        strongSelf->_statusLabel.stringValue = @"RDP engine disconnected";
+      }
+
+      if (strongSelf.connectionStateDidChange) {
+        strongSelf.connectionStateDidChange(connected ? YES : NO);
+      }
+    });
+  });
+
   return self;
 }
 
