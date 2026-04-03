@@ -2,6 +2,7 @@
 #include "FrdpInputMapper.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 #include <chrono>
@@ -74,6 +75,12 @@ bool FrdpEngineCore::connect(const std::string& host,
                               bool ignoreCertificate,
                               const std::string& performanceProfile,
                               std::string& errorMessage) {
+  // Host validation is pure and blocking (DNS lookup) — do it before
+  // acquiring the state lock to avoid starving send*() callers.
+  std::string normalizedHost = host;
+  if (!normalizeHost(normalizedHost, errorMessage)) return false;
+  if (!validateHostResolvable(normalizedHost, port, errorMessage)) return false;
+
   std::lock_guard<std::mutex> stateLock(stateMutex_);
 
   if (running_.load()) {
@@ -85,10 +92,6 @@ bool FrdpEngineCore::connect(const std::string& host,
   lastButtons_  = 0;
   lastPointerX_ = 0;
   lastPointerY_ = 0;
-
-  std::string normalizedHost = host;
-  if (!normalizeHost(normalizedHost, errorMessage)) return false;
-  if (!validateHostResolvable(normalizedHost, port, errorMessage)) return false;
 
 #if FRDP_HAS_FREERDP
   instance_.reset(freerdp_new());
@@ -162,11 +165,10 @@ bool FrdpEngineCore::connect(const std::string& host,
   setU32(FreeRDP_FrameAcknowledge, 8);
 
   // Cache/render hints
-  setBool(FreeRDP_BitmapCacheEnabled,      TRUE);
-  setBool(FreeRDP_BitmapCacheV3Enabled,    TRUE);
-  setBool(FreeRDP_SurfaceCommandsEnabled,  TRUE);
-  setBool(FreeRDP_FrameMarkerCommandEnabled,TRUE);
-  setBool(FreeRDP_SurfaceFrameMarkerEnabled,TRUE);
+  setBool(FreeRDP_BitmapCacheEnabled,         TRUE);
+  setBool(FreeRDP_BitmapCacheV3Enabled,        TRUE);
+  setBool(FreeRDP_FrameMarkerCommandEnabled,   TRUE);
+  setBool(FreeRDP_SurfaceFrameMarkerEnabled,   TRUE);
   setBool(FreeRDP_MouseMotion,             TRUE);
   setBool(FreeRDP_HasExtendedMouseEvent,   TRUE);
   setBool(FreeRDP_HasHorizontalWheel,      TRUE);
@@ -286,9 +288,8 @@ void FrdpEngineCore::sendScroll(double deltaX, double deltaY) {
 #if FRDP_HAS_FREERDP
   std::lock_guard<std::mutex> lock(stateMutex_);
   if (!instance_) return;
-  auto* gdi   = instance_->context ? instance_->context->gdi   : nullptr;
   auto* input = instance_->context ? instance_->context->input : nullptr;
-  if (!input || !gdi || gdi->width <= 0 || gdi->height <= 0) return;
+  if (!input) return;
 
   const UINT16 x = lastPointerX_, y = lastPointerY_;
 
@@ -422,12 +423,12 @@ BOOL FrdpEngineCore::onEndPaint(rdpContext* context) {
   return TRUE;
 }
 
-bool FrdpEngineCore::emitFrameFromFreeRdp() {
-  if (!instance_ || !instance_->context || !instance_->context->gdi) return false;
+void FrdpEngineCore::emitFrameFromFreeRdp() {
+  if (!instance_ || !instance_->context || !instance_->context->gdi) return;
 
   rdpGdi* gdi = instance_->context->gdi;
   if (!gdi->primary_buffer || gdi->width <= 0 || gdi->height <= 0 || gdi->stride <= 0)
-    return false;
+    return;
 
   FrameCallback callback;
   {
@@ -435,9 +436,8 @@ bool FrdpEngineCore::emitFrameFromFreeRdp() {
     callback = frameCallback_;
   }
 
-  if (!callback) return false;
+  if (!callback) return;
   callback(gdi->primary_buffer, gdi->width, gdi->height, gdi->stride);
-  return true;
 }
 
 // MARK: - FreeRdpDeleter ---------------------------------------------------

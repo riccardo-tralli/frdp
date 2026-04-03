@@ -39,14 +39,6 @@
   }
 }
 
-- (void)drawRect:(NSRect)dirtyRect {
-  [super drawRect:dirtyRect];
-  if (_image == nullptr) {
-    [[NSColor blackColor] setFill];
-    NSRectFill(dirtyRect);
-  }
-}
-
 @end
 
 // ---------------------------------------------------------------------------
@@ -108,6 +100,7 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
     CGDataProviderRef provider = CGDataProviderCreateWithData(
         nullptr, copied, frameBytes, FrdpReleaseFrameBuffer);
     if (provider == nullptr) {
+      free(copied);
       FrdpFrameRenderer* s = weakSelf;
       if (s) s->_pending.store(false);
       return;

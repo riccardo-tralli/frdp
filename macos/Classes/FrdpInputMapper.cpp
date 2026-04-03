@@ -4,7 +4,7 @@
 // HID usage page 7 (keyboard / keypad): usage 0x04..0x64 → Set-1 scancode
 // ---------------------------------------------------------------------------
 
-static const FrdpScancode kHidTable[] = {
+static constexpr FrdpScancode kHidTable[] = {
   {0x1E,false},{0x30,false},{0x2E,false},{0x20,false},{0x12,false},{0x21,false},{0x22,false},{0x23,false}, // 04-0B a-h
   {0x17,false},{0x24,false},{0x25,false},{0x26,false},{0x32,false},{0x31,false},{0x18,false},{0x19,false}, // 0C-13 i-p
   {0x10,false},{0x13,false},{0x1F,false},{0x14,false},{0x16,false},{0x2F,false},{0x11,false},{0x2D,false}, // 14-1B q-x
@@ -52,11 +52,11 @@ static const FrdpScancode kHidTable[] = {
   {0x53,false}, // 63 KP .
   {0x56,false}, // 64 non-US backslash
 };
-static const int kHidTableBase = 0x04;
-static const int kHidTableSize = static_cast<int>(sizeof(kHidTable) / sizeof(kHidTable[0]));
+static constexpr int kHidTableBase = 0x04;
+static constexpr int kHidTableSize = static_cast<int>(sizeof(kHidTable) / sizeof(kHidTable[0]));
 
 // HID modifier keys 0xE0-0xE7
-static const FrdpScancode kHidModTable[] = {
+static constexpr FrdpScancode kHidModTable[] = {
   {0x1D, false}, // E0 LCtrl
   {0x2A, false}, // E1 LShift
   {0x38, false}, // E2 LAlt

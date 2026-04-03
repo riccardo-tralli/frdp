@@ -1,9 +1,6 @@
 #pragma once
 
-#include <algorithm>
 #include <atomic>
-#include <cctype>
-#include <chrono>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -117,7 +114,7 @@ class FrdpEngineCore {
   static BOOL onBeginPaint(rdpContext* context);
   static BOOL onEndPaint(rdpContext* context);
 
-  bool emitFrameFromFreeRdp();
+  void emitFrameFromFreeRdp();
 
   // Custom deleter: frees GDI, context, and the freerdp instance in order.
   struct FreeRdpDeleter {
