@@ -8,6 +8,7 @@ final class FrdpInputOverlayView: NSView {
   private var tapCandidateMoved = false
   private var tapCandidateStartTime: TimeInterval = 0
   private var tapCandidateStartPoint: NSPoint = .zero
+  private var tapCandidateButtons = 0
 
   init(engine: FrdpRdpEngineAdapter) {
     self.engine = engine
@@ -118,7 +119,18 @@ final class FrdpInputOverlayView: NSView {
     super.touchesBegan(with: event)
 
     let touching = event.touches(matching: .touching, in: self)
-    guard touching.count == 1, (NSEvent.pressedMouseButtons & 0x1) == 0 else {
+    guard (NSEvent.pressedMouseButtons & 0x1) == 0 else {
+      tapCandidateActive = false
+      return
+    }
+
+    let tapButtons: Int
+    switch touching.count {
+    case 1:
+      tapButtons = 0x1 // left click
+    case 2:
+      tapButtons = 0x2 // right click
+    default:
       tapCandidateActive = false
       return
     }
@@ -127,11 +139,20 @@ final class FrdpInputOverlayView: NSView {
     tapCandidateMoved = false
     tapCandidateStartTime = ProcessInfo.processInfo.systemUptime
     tapCandidateStartPoint = currentLocalPointer()
+    tapCandidateButtons = tapButtons
   }
 
   override func touchesMoved(with event: NSEvent) {
     super.touchesMoved(with: event)
     guard tapCandidateActive else { return }
+
+    // Cancel tap if finger count changes mid-gesture.
+    let touching = event.touches(matching: .touching, in: self)
+    if touching.count != 1 && touching.count != 2 {
+      tapCandidateMoved = true
+      return
+    }
+
     let p = currentLocalPointer()
     let dx = p.x - tapCandidateStartPoint.x
     let dy = p.y - tapCandidateStartPoint.y
@@ -148,7 +169,7 @@ final class FrdpInputOverlayView: NSView {
     let duration = ProcessInfo.processInfo.systemUptime - tapCandidateStartTime
     guard !tapCandidateMoved && duration <= 0.25 else { return }
 
-    sendPrimaryClick(at: currentLocalPointer())
+    sendClick(at: currentLocalPointer(), buttons: tapCandidateButtons)
   }
 
   override func touchesCancelled(with event: NSEvent) {
@@ -173,8 +194,8 @@ final class FrdpInputOverlayView: NSView {
     return convert(window.mouseLocationOutsideOfEventStream, from: nil)
   }
 
-  private func sendPrimaryClick(at localPoint: NSPoint) {
-    forwardPointer(at: localPoint, buttons: 0x1)
+  private func sendClick(at localPoint: NSPoint, buttons: Int) {
+    forwardPointer(at: localPoint, buttons: buttons)
     forwardPointer(at: localPoint, buttons: 0)
   }
 
