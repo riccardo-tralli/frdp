@@ -157,7 +157,7 @@ bool FrdpEngineCore::connect(const std::string& host,
 
 void FrdpEngineCore::disconnect() {
   const bool wasConnected = connected_.load();
-  const bool wasRunning = running_.exchange(false);
+  running_.store(false);
 
   {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
@@ -174,7 +174,9 @@ void FrdpEngineCore::disconnect() {
     lastPointerY_ = 0;
   }
 
-  if (wasRunning && worker_.joinable()) {
+  // Always join if joinable: runLoop may have already flipped running_ to false
+  // after a remote disconnect, leaving a joinable thread behind.
+  if (worker_.joinable()) {
     worker_.join();
   }
 

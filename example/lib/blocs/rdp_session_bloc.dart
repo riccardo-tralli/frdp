@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frdp/frdp.dart';
 
@@ -5,9 +7,14 @@ part "rdp_session_event.dart";
 part "rdp_session_state.dart";
 
 class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
+  // Polling interval for checking the connection state of the RDP session
+  static const Duration _connectionStatePollingInterval = Duration(seconds: 1);
+  Timer? _connectionStateTimer;
+
   RdpSessionBloc() : super(const RdpSessionDisconnectedState()) {
     on<ConnectRdpSessionEvent>(_onConnect);
     on<DisconnectRdpSessionEvent>(_onDisconnect);
+    on<PollRdpSessionStateEvent>(_onPollConnectionState);
   }
 
   Future<void> _onConnect(
@@ -27,8 +34,11 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
           performanceProfile: event.performanceProfile,
         ),
       );
+
       emit(RdpSessionConnectedState(session.id));
+      _startConnectionStatePolling();
     } catch (e) {
+      _stopConnectionStatePolling();
       emit(RdpSessionErrorState(e.toString()));
     }
   }
@@ -37,14 +47,68 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
     DisconnectRdpSessionEvent event,
     Emitter<RdpSessionState> emit,
   ) async {
+    final currentState = state;
+    if (currentState is! RdpSessionConnectedState) {
+      _stopConnectionStatePolling();
+      emit(const RdpSessionDisconnectedState());
+      return;
+    }
+
     try {
-      await Frdp().disconnect(
-        sessionId: (state as RdpSessionConnectedState).id,
-      );
+      await Frdp().disconnect(currentState.id);
+      _stopConnectionStatePolling();
       emit(const RdpSessionDisconnectedState());
     } catch (e) {
       emit(RdpSessionErrorState(e.toString()));
     }
+  }
+
+  Future<void> _onPollConnectionState(
+    PollRdpSessionStateEvent event,
+    Emitter<RdpSessionState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! RdpSessionConnectedState) {
+      _stopConnectionStatePolling();
+      return;
+    }
+
+    try {
+      final connectionState = await Frdp().getConnectionState(currentState.id);
+
+      if (connectionState == FrdpConnectionState.disconnected) {
+        _stopConnectionStatePolling();
+        emit(const RdpSessionDisconnectedState());
+        return;
+      }
+
+      if (connectionState == FrdpConnectionState.error) {
+        _stopConnectionStatePolling();
+        emit(const RdpSessionErrorState('Session entered error state.'));
+      }
+    } catch (_) {
+      _stopConnectionStatePolling();
+      emit(const RdpSessionDisconnectedState());
+    }
+  }
+
+  void _startConnectionStatePolling() {
+    _stopConnectionStatePolling();
+    _connectionStateTimer = Timer.periodic(
+      _connectionStatePollingInterval,
+      (_) => add(const PollRdpSessionStateEvent()),
+    );
+  }
+
+  void _stopConnectionStatePolling() {
+    _connectionStateTimer?.cancel();
+    _connectionStateTimer = null;
+  }
+
+  @override
+  Future<void> close() {
+    _stopConnectionStatePolling();
+    return super.close();
   }
 
   void connect({

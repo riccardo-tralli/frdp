@@ -27,3 +27,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
 final class DisconnectRdpSessionEvent extends RdpSessionEvent {
   const DisconnectRdpSessionEvent();
 }
+
+final class PollRdpSessionStateEvent extends RdpSessionEvent {
+  const PollRdpSessionStateEvent();
+}
