@@ -1,5 +1,6 @@
 #import "FrdpRdpEngineAdapter.h"
 #import "FrdpFrameRenderer.h"
+#import "FrdpRenderContainerView.h"
 #include "FrdpEngineCore.hpp"
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@
 @implementation FrdpRdpEngineAdapter {
   std::unique_ptr<FrdpEngineCore> _core;
   FrdpFrameRenderer*              _renderer;
-  NSTextField*                    _statusLabel;
+  FrdpRenderContainerView*        _containerView;
 }
 
 - (instancetype)init {
@@ -28,31 +29,9 @@
   _core     = std::make_unique<FrdpEngineCore>();
   _renderer = [[FrdpFrameRenderer alloc] init];
 
-  // Container view (black background, fills bounds).
-  NSView* container = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 640, 360)];
-  container.wantsLayer = YES;
-  container.layer.backgroundColor = NSColor.blackColor.CGColor;
-
-  FrdpFrameView* frameView = _renderer.frameView;
-  [container addSubview:frameView];
-  [NSLayoutConstraint activateConstraints:@[
-    [frameView.leadingAnchor  constraintEqualToAnchor:container.leadingAnchor],
-    [frameView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-    [frameView.topAnchor      constraintEqualToAnchor:container.topAnchor],
-    [frameView.bottomAnchor   constraintEqualToAnchor:container.bottomAnchor],
-  ]];
-
-  _statusLabel = [NSTextField labelWithString:@"RDP engine idle"];
-  _statusLabel.textColor       = NSColor.whiteColor;
-  _statusLabel.backgroundColor = [NSColor colorWithWhite:0 alpha:0.45];
-  _statusLabel.translatesAutoresizingMaskIntoConstraints = NO;
-  [container addSubview:_statusLabel];
-  [NSLayoutConstraint activateConstraints:@[
-    [_statusLabel.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:12],
-    [_statusLabel.topAnchor     constraintEqualToAnchor:container.topAnchor     constant:12],
-  ]];
-
-  self.renderView = container;
+  _containerView = [[FrdpRenderContainerView alloc] initWithFrameView:_renderer.frameView];
+  [_containerView showIdleStatus];
+  self.renderView = _containerView;
 
   // Wire frame callback: engine core → renderer (called from worker thread).
   __weak FrdpFrameRenderer* weakRenderer = _renderer;
@@ -68,7 +47,7 @@
 
       strongSelf.connected = connected ? YES : NO;
       if (!connected) {
-        strongSelf->_statusLabel.stringValue = @"RDP engine disconnected";
+        [strongSelf->_containerView showDisconnectedStatus];
       }
 
       if (strongSelf.connectionStateDidChange) {
@@ -103,12 +82,11 @@
 
   self.connected = ok;
   if (ok) {
-    _statusLabel.stringValue =
-        [NSString stringWithFormat:@"Embedded RDP connected: %@:%ld", host, (long)port];
+    [_containerView showConnectedStatusForHost:host port:port];
     return YES;
   }
 
-  _statusLabel.stringValue = @"Embedded RDP unavailable";
+  [_containerView showUnavailableStatus];
   if (error) {
     *error = [NSError errorWithDomain:@"frdp.engine"
                                  code:1001
@@ -120,7 +98,7 @@
 - (void)disconnect {
   _core->disconnect();
   self.connected = NO;
-  _statusLabel.stringValue = @"RDP engine disconnected";
+  [_containerView showDisconnectedStatus];
 }
 
 // MARK: - Input forwarding --------------------------------------------------
