@@ -1,14 +1,31 @@
 import "frdp_performance_profile.dart";
 import "../channel/frdp_channel_contract.dart";
 
+/// Represents the configuration for establishing a remote desktop connection.
 class FrdpConnectionConfig {
+  /// The host or IP address of the remote desktop to connect to.
   final String host;
+
+  /// The port number to use for the connection (default is 3389).
   final int port;
+
+  /// The username to use for authentication with the remote desktop.
   final String username;
+
+  /// The password to use for authentication with the remote desktop.
   final String password;
+
+  /// The domain to use for authentication with the remote desktop (optional).
   final String? domain;
+
+  /// Whether to ignore certificate errors when connecting to the remote
+  /// desktop (default is false).
   final bool ignoreCertificate;
+
+  /// The performance profile to use for the connection (default is medium).
   final FrdpPerformanceProfile performanceProfile;
+
+  /// The connection timeout in milliseconds (optional).
   final int? connectTimeoutMs;
 
   const FrdpConnectionConfig({
@@ -22,6 +39,8 @@ class FrdpConnectionConfig {
     this.connectTimeoutMs,
   });
 
+  /// Converts the [FrdpConnectionConfig] instance to a [Map] for use in
+  /// platform channels.
   Map<String, dynamic> toMap() {
     if (host.trim().isEmpty) {
       throw ArgumentError.value(host, kHostArg, "Host cannot be empty");

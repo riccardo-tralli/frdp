@@ -1,28 +1,42 @@
 import "package:flutter/foundation.dart";
+import "package:flutter/material.dart";
 import "package:flutter/services.dart";
-import "package:flutter/widgets.dart";
 
 import "../src/channel/frdp_platform_interface.dart";
 
+/// A widget that displays the remote desktop session.
+/// It uses an [AppKitView] on macOS to render the RDP session, and shows a
+/// placeholder message on other platforms.
 class FrdpView extends StatelessWidget {
+  /// The unique identifier of the RDP session.
   final String sessionId;
 
+  /// Constructs a [FrdpView] instance with the given [sessionId].
   const FrdpView({required this.sessionId, super.key});
 
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform != TargetPlatform.macOS) {
-      return const Center(
-        child: Text("FrdpView is currently available only on macOS"),
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Text(
+            "FrdpView is currently available only on macOS",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
       );
     }
 
+    // On macOS, use an AppKitView to render the RDP session.
     final appKitView = AppKitView(
       viewType: "frdp/view",
       creationParams: <String, dynamic>{"sessionId": sessionId},
       creationParamsCodec: const StandardMessageCodec(),
     );
 
+    // Wrap the AppKitView with a Focus and Listener to capture keyboard and
+    // mouse events and forward them to the native side.
     return Focus(
       autofocus: true,
       onKeyEvent: (_, event) {
