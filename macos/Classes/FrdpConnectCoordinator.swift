@@ -3,6 +3,7 @@ import FlutterMacOS
 
 final class FrdpConnectCoordinator {
   private let connectQueue = DispatchQueue(label: "it.riccardotralli.frdp.connect", qos: .userInitiated)
+  private var pendingConnectAttempts: [String: FrdpConnectAttempt] = [:]
   private var pendingConnectCancels: [String: () -> Void] = [:]
 
   func connect(
@@ -31,19 +32,13 @@ final class FrdpConnectCoordinator {
 
     session.state = FrdpChannel.State.connecting
 
-    let attemptId = UUID().uuidString
-    let resolveLock = NSLock()
-    var didResolve = false
+    let attempt = FrdpConnectAttempt()
+    let attemptId = attempt.attemptId
 
-    let timeoutWorkItem = DispatchWorkItem { [weak self, weak session] in
-      resolveLock.lock()
-      if didResolve {
-        resolveLock.unlock()
-        return
-      }
-      didResolve = true
-      resolveLock.unlock()
+    pendingConnectAttempts[attemptId] = attempt
 
+    attempt.scheduleTimeout(afterMs: timeoutMs) { [weak self, weak session] in
+      self?.pendingConnectAttempts.removeValue(forKey: attemptId)
       self?.pendingConnectCancels.removeValue(forKey: attemptId)
       session?.state = FrdpChannel.State.error
       result(
@@ -56,15 +51,9 @@ final class FrdpConnectCoordinator {
     }
 
     pendingConnectCancels[attemptId] = { [weak self, weak session] in
-      resolveLock.lock()
-      if didResolve {
-        resolveLock.unlock()
-        return
-      }
-      didResolve = true
-      resolveLock.unlock()
+      guard attempt.cancel() else { return }
 
-      timeoutWorkItem.cancel()
+      self?.pendingConnectAttempts.removeValue(forKey: attemptId)
       self?.pendingConnectCancels.removeValue(forKey: attemptId)
       session?.state = FrdpChannel.State.disconnected
       result(
@@ -75,8 +64,6 @@ final class FrdpConnectCoordinator {
         )
       )
     }
-
-    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(timeoutMs), execute: timeoutWorkItem)
 
     connectQueue.async {
       do {
@@ -93,16 +80,12 @@ final class FrdpConnectCoordinator {
         DispatchQueue.main.async { [weak self] in
           guard let self else { return }
 
-          resolveLock.lock()
-          if didResolve {
-            resolveLock.unlock()
+          guard attempt.resolveOnce() else {
             session.engine.disconnect()
             return
           }
-          didResolve = true
-          resolveLock.unlock()
 
-          timeoutWorkItem.cancel()
+          self.pendingConnectAttempts.removeValue(forKey: attemptId)
           self.pendingConnectCancels.removeValue(forKey: attemptId)
           session.state = FrdpChannel.State.connected
           sessionStore.addSession(session)
@@ -110,15 +93,11 @@ final class FrdpConnectCoordinator {
         }
       } catch {
         DispatchQueue.main.async { [weak self] in
-          resolveLock.lock()
-          if didResolve {
-            resolveLock.unlock()
+          guard attempt.resolveOnce() else {
             return
           }
-          didResolve = true
-          resolveLock.unlock()
 
-          timeoutWorkItem.cancel()
+          self?.pendingConnectAttempts.removeValue(forKey: attemptId)
           self?.pendingConnectCancels.removeValue(forKey: attemptId)
           session.state = FrdpChannel.State.error
           result(FlutterError(code: "RDP_CONNECT_FAILED", message: error.localizedDescription, details: nil))
