@@ -1,0 +1,37 @@
+{
+  "channelName": "frdp",
+  "methods": {
+    "getPlatformVersion": "getPlatformVersion",
+    "connect": "connect",
+    "disconnect": "disconnect",
+    "getConnectionState": "getConnectionState",
+    "sendPointerEvent": "sendPointerEvent",
+    "sendKeyEvent": "sendKeyEvent"
+  },
+  "args": {
+    "sessionId": "sessionId",
+    "state": "state",
+    "host": "host",
+    "port": "port",
+    "username": "username",
+    "password": "password",
+    "domain": "domain",
+    "ignoreCertificate": "ignoreCertificate",
+    "performanceProfile": "performanceProfile",
+    "connectTimeoutMs": "connectTimeoutMs",
+    "x": "x",
+    "y": "y",
+    "buttons": "buttons",
+    "keyCode": "keyCode",
+    "isDown": "isDown"
+  },
+  "states": {
+    "disconnected": "disconnected",
+    "connecting": "connecting",
+    "connected": "connected",
+    "error": "error"
+  },
+  "viewTypes": {
+    "rdpView": "frdp/view"
+  }
+}
