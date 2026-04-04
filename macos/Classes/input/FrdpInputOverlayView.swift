@@ -1,5 +1,4 @@
 import Cocoa
-import FlutterMacOS
 
 final class FrdpInputOverlayView: NSView {
   private let engine: FrdpRdpEngineAdapter
