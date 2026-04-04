@@ -105,7 +105,7 @@ await frdp.disconnect(sessionId: session.id);
 
 ## FreeRDP requirement (macOS)
 
-FreeRDP is required. Install with Homebrew:
+[FreeRDP](https://github.com/FreeRDP/FreeRDP) is required. Install with Homebrew:
 
 ```bash
 brew install freerdp
