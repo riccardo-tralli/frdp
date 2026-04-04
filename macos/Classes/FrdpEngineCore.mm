@@ -1,6 +1,6 @@
 #include "FrdpEngineCore.hpp"
+#include "FrdpFreeRdpSettingsApplier.hpp"
 #include "FrdpInputMapper.hpp"
-#include "FrdpPerformanceProfiles.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -114,67 +114,17 @@ bool FrdpEngineCore::connect(const std::string& host,
     return false;
   }
 
-  bool ok = true;
-  auto setBool = [&](FreeRDP_Settings_Keys_Bool  k, BOOL  v) { ok = ok && freerdp_settings_set_bool(settings, k, v); };
-  auto setU32  = [&](FreeRDP_Settings_Keys_UInt32 k, UINT32 v) { ok = ok && freerdp_settings_set_uint32(settings, k, v); };
-  auto setU16  = [&](FreeRDP_Settings_Keys_UInt16 k, UINT16 v) { ok = ok && freerdp_settings_set_uint16(settings, k, v); };
+  const FrdpFreeRdpConnectConfig config{
+      normalizedHost,
+      port,
+      username,
+      password,
+      domain,
+      ignoreCertificate,
+      performanceProfile,
+  };
 
-  ok = ok && freerdp_settings_set_string(settings, FreeRDP_ServerHostname, normalizedHost.c_str());
-  setU32(FreeRDP_ServerPort, static_cast<UINT32>(port));
-  ok = ok && freerdp_settings_set_string(settings, FreeRDP_Username, username.c_str());
-  ok = ok && freerdp_settings_set_string(settings, FreeRDP_Password, password.c_str());
-  if (!domain.empty()) ok = ok && freerdp_settings_set_string(settings, FreeRDP_Domain, domain.c_str());
-
-  const FrdpPerformanceSettings perf = ResolvePerformanceSettings(performanceProfile);
-
-  setU32(FreeRDP_DesktopWidth,  perf.desktopWidth);
-  setU32(FreeRDP_DesktopHeight, perf.desktopHeight);
-  setU32(FreeRDP_ColorDepth, 32);
-  setU32(FreeRDP_ConnectionType, perf.connectionType);
-  setU16(FreeRDP_SupportedColorDepths,
-         static_cast<UINT16>(RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT));
-
-  // Certificate handling
-  setBool(FreeRDP_IgnoreCertificate,      ignoreCertificate ? TRUE : FALSE);
-  setBool(FreeRDP_AutoAcceptCertificate,  ignoreCertificate ? TRUE : FALSE);
-  setBool(FreeRDP_AutoDenyCertificate, FALSE);
-
-  // Transport
-  setBool(FreeRDP_NetworkAutoDetect,    TRUE);
-  setBool(FreeRDP_SupportMultitransport,TRUE);
-  setBool(FreeRDP_AsyncUpdate,          TRUE);
-  setBool(FreeRDP_AsyncChannels,        TRUE);
-  setBool(FreeRDP_FastPathOutput,       TRUE);
-  setBool(FreeRDP_FastPathInput,        TRUE);
-  setBool(FreeRDP_CompressionEnabled,   TRUE);
-  setU32(FreeRDP_FrameAcknowledge, 8);
-
-  // Cache/render hints
-  setBool(FreeRDP_BitmapCacheEnabled,         TRUE);
-  setBool(FreeRDP_BitmapCacheV3Enabled,        TRUE);
-  setBool(FreeRDP_FrameMarkerCommandEnabled,   TRUE);
-  setBool(FreeRDP_SurfaceFrameMarkerEnabled,   TRUE);
-  setBool(FreeRDP_MouseMotion,             TRUE);
-  setBool(FreeRDP_HasExtendedMouseEvent,   TRUE);
-  setBool(FreeRDP_HasHorizontalWheel,      TRUE);
-
-  // GDI-based framebuffer path — disable GPU pipeline
-  setBool(FreeRDP_SupportGraphicsPipeline, FALSE);
-  setBool(FreeRDP_SurfaceCommandsEnabled,  FALSE);
-  setBool(FreeRDP_GfxProgressive,          FALSE);
-  setBool(FreeRDP_GfxProgressiveV2,        FALSE);
-  setBool(FreeRDP_GfxPlanar,               FALSE);
-  setBool(FreeRDP_GfxH264,                 FALSE);
-  setBool(FreeRDP_GfxAVC444,               FALSE);
-  setBool(FreeRDP_GfxAVC444v2,             FALSE);
-
-  // Experience flags
-  setBool(FreeRDP_DisableWallpaper,        perf.disableWallpaper);
-  setBool(FreeRDP_DisableFullWindowDrag,   perf.disableFullWindowDrag);
-  setBool(FreeRDP_DisableMenuAnims,        perf.disableMenuAnims);
-  setBool(FreeRDP_DisableThemes,           perf.disableThemes);
-  setBool(FreeRDP_AllowDesktopComposition, perf.allowDesktopComposition);
-  setBool(FreeRDP_AllowFontSmoothing,      perf.allowFontSmoothing);
+  const bool ok = FrdpApplyFreeRdpSettings(settings, config);
 
   if (!ok) {
     errorMessage = "Unable to configure FreeRDP settings.";
