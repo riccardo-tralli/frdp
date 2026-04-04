@@ -33,7 +33,7 @@ class Frdp {
   ///
   /// Throws an error if the disconnection fails or if there is no active
   /// session to disconnect from.
-  Future<void> disconnect(String? sessionId) {
+  Future<void> disconnect([String? sessionId]) {
     return FrdpPlatform.instance.disconnect(sessionId);
   }
 
@@ -45,7 +45,7 @@ class Frdp {
   ///
   /// Throws an error if the state retrieval fails or if there is no active
   /// session with the specified [sessionId].
-  Future<FrdpConnectionState> getConnectionState({String? sessionId}) async {
+  Future<FrdpConnectionState> getConnectionState([String? sessionId]) async {
     final state = await FrdpPlatform.instance.getConnectionState(sessionId);
     return parseFrdpConnectionState(state);
   }
@@ -54,8 +54,8 @@ class Frdp {
   ///
   /// Returns `true` if the session is connected, `false` otherwise.
   /// Throws an error if the connection state retrieval fails or if there is no active session with the specified [sessionId].
-  Future<bool> isConnected({String? sessionId}) async {
-    final state = await getConnectionState(sessionId: sessionId);
+  Future<bool> isConnected([String? sessionId]) async {
+    final state = await getConnectionState(sessionId);
     return state == FrdpConnectionState.connected;
   }
 

@@ -31,7 +31,7 @@ class MethodChannelFrdp extends FrdpPlatform {
   }
 
   @override
-  Future<void> disconnect({String? sessionId}) {
+  Future<void> disconnect([String? sessionId]) {
     return methodChannel.invokeMethod<void>(
       kDisconnectMethod,
       <String, dynamic>{kSessionIdArg: sessionId},
@@ -39,7 +39,7 @@ class MethodChannelFrdp extends FrdpPlatform {
   }
 
   @override
-  Future<String> getConnectionState({String? sessionId}) async {
+  Future<String> getConnectionState([String? sessionId]) async {
     final result = await methodChannel.invokeMethod<String>(
       kGetConnectionStateMethod,
       <String, dynamic>{kSessionIdArg: sessionId},
