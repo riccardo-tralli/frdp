@@ -106,7 +106,7 @@ void writeFile(String path, String content) {
 void main() {
   final repoRoot = Directory.current.path;
   final schemaPath = '$repoRoot/tool/channel_contract.json';
-  final swiftPath = '$repoRoot/macos/Classes/FrdpChannelContract.swift';
+  final swiftPath = '$repoRoot/macos/Classes/plugin/FrdpChannelContract.swift';
   final dartPath = '$repoRoot/lib/src/channel/frdp_channel_contract.dart';
 
   final schema = readSchema(File(schemaPath));
