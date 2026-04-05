@@ -5,6 +5,23 @@ NS_ASSUME_NONNULL_BEGIN
 
 typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
 
+/// Optional custom performance settings forwarded to FreeRDP.
+/// When passed to `-connectWith…customPerformanceConfig:`, these values
+/// completely replace the preset performance profile.
+@interface FrdpCustomProfileConfig : NSObject
+@property(nonatomic) NSUInteger desktopWidth;
+@property(nonatomic) NSUInteger desktopHeight;
+/// Numeric FreeRDP CONNECTION_TYPE_* value (1=modem … 7=autodetect).
+@property(nonatomic) NSUInteger connectionType;
+@property(nonatomic) NSUInteger colorDepth;
+@property(nonatomic) BOOL disableWallpaper;
+@property(nonatomic) BOOL disableFullWindowDrag;
+@property(nonatomic) BOOL disableMenuAnimations;
+@property(nonatomic) BOOL disableThemes;
+@property(nonatomic) BOOL allowDesktopComposition;
+@property(nonatomic) BOOL allowFontSmoothing;
+@end
+
 @interface FrdpRdpEngineAdapter : NSObject
 
 @property(nonatomic, readonly) NSView *renderView;
@@ -19,7 +36,8 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
                password:(NSString *)password
                  domain:(nullable NSString *)domain
       ignoreCertificate:(BOOL)ignoreCertificate
-  performanceProfile:(NSString *)performanceProfile
+     performanceProfile:(NSString *)performanceProfile
+  customPerformanceConfig:(nullable FrdpCustomProfileConfig *)customConfig
                   error:(NSError **)error;
 
 - (void)disconnect;
@@ -27,10 +45,10 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
 - (void)sendPointerEventWithX:(double)x y:(double)y buttons:(NSInteger)buttons;
 
 - (void)sendPointerEventWithX:(double)x
-           y:(double)y
-         buttons:(NSInteger)buttons
-        viewWidth:(double)viewWidth
-       viewHeight:(double)viewHeight;
+                            y:(double)y
+                      buttons:(NSInteger)buttons
+                    viewWidth:(double)viewWidth
+                   viewHeight:(double)viewHeight;
 
 - (void)sendScrollEventWithDeltaX:(double)deltaX deltaY:(double)deltaY;
 

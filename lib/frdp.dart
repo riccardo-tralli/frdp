@@ -2,6 +2,8 @@ export "widgets/frdp_view.dart";
 export "src/frdp_api.dart";
 export "src/models/frdp_connection_config.dart";
 export "src/models/frdp_connection_state.dart";
+export "src/models/frdp_connection_type.dart";
+export "src/models/frdp_custom_performance_profile.dart";
 export "src/models/frdp_performance_profile.dart";
 export "src/models/frdp_session.dart";
 
@@ -11,8 +13,6 @@ export "src/models/frdp_session.dart";
   ! Use with caution and be prepared to update your code when upgrading to new versions.
 
   Things to do:
-  TODO: add disconnect on remote session close
-  TODO: add customizable session labels
   TODO: add advanced graphic configuration options
   TODO: add clipboard support
   TODO: improve error handling and reporting

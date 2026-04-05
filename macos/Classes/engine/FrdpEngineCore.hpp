@@ -8,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include "FrdpFreeRdpSettingsApplier.hpp"
 
 #if __has_include(<freerdp/freerdp.h>)
 #define FRDP_HAS_FREERDP 1
@@ -48,14 +49,7 @@ class FrdpEngineCore {
   // Lifecycle
   // -------------------------------------------------------------------------
 
-  bool connect(const std::string& host,
-               int port,
-               const std::string& username,
-               const std::string& password,
-               const std::string& domain,
-               bool ignoreCertificate,
-               const std::string& performanceProfile,
-               std::string& errorMessage);
+  bool connect(const FrdpFreeRdpConnectConfig& config, std::string& errorMessage);
 
   void disconnect();
 

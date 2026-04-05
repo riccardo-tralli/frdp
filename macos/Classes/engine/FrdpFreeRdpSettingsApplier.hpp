@@ -10,14 +10,32 @@
 struct rdp_settings;
 #endif
 
+/// Optional, fully-custom performance settings that override the preset
+/// profile when `hasCustomPerformanceProfile` is true in
+/// `FrdpFreeRdpConnectConfig`.
+struct FrdpCustomPerformanceConfig {
+  uint32_t desktopWidth            = 1280;
+  uint32_t desktopHeight           = 720;
+  uint32_t connectionType          = 2;  // CONNECTION_TYPE_BROADBAND_LOW
+  uint32_t colorDepth              = 32;
+  bool     disableWallpaper        = true;
+  bool     disableFullWindowDrag   = true;
+  bool     disableMenuAnimations   = true;
+  bool     disableThemes           = true;
+  bool     allowDesktopComposition = false;
+  bool     allowFontSmoothing      = false;
+};
+
 struct FrdpFreeRdpConnectConfig {
   std::string host;
-  int port;
+  int         port;
   std::string username;
   std::string password;
   std::string domain;
-  bool ignoreCertificate;
-  std::string performanceProfile;
+  bool        ignoreCertificate;
+  std::string performanceProfile;         // used only when !hasCustomPerformanceProfile
+  bool        hasCustomPerformanceProfile = false;
+  FrdpCustomPerformanceConfig customPerformanceProfile;
 };
 
 bool FrdpApplyFreeRdpSettings(rdpSettings* settings, const FrdpFreeRdpConnectConfig& config);

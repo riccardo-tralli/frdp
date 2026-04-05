@@ -7,22 +7,15 @@ final class FrdpConnectCoordinator {
   private var pendingConnectCancels: [String: () -> Void] = [:]
 
   func connect(
-    host: String,
-    port: Int,
-    username: String,
-    password: String,
-    domain: String?,
-    profile: String,
-    ignoreCertificate: Bool,
-    timeoutMs: Int,
+    request: FrdpConnectRequest,
     sessionStore: FrdpSessionStore,
     result: @escaping FlutterResult
   ) {
     let session = FrdpSession(
-      host: host,
-      port: port,
-      username: username,
-      domain: domain
+      host: request.host,
+      port: request.port,
+      username: request.username,
+      domain: request.domain
     )
 
     session.engine.connectionStateDidChange = { [weak session] connected in
@@ -37,14 +30,14 @@ final class FrdpConnectCoordinator {
 
     pendingConnectAttempts[attemptId] = attempt
 
-    attempt.scheduleTimeout(afterMs: timeoutMs) { [weak self, weak session] in
+    attempt.scheduleTimeout(afterMs: request.timeoutMs) { [weak self, weak session] in
       self?.pendingConnectAttempts.removeValue(forKey: attemptId)
       self?.pendingConnectCancels.removeValue(forKey: attemptId)
       session?.state = FrdpChannel.State.error
       result(
         FlutterError(
           code: "RDP_CONNECT_TIMEOUT",
-          message: "RDP connect timed out after \(timeoutMs)ms.",
+          message: "RDP connect timed out after \(request.timeoutMs)ms.",
           details: nil
         )
       )
@@ -65,16 +58,23 @@ final class FrdpConnectCoordinator {
       )
     }
 
+    // Build the optional custom performance config before jumping to the
+    // background queue so we avoid any threading concerns with the struct.
+    let customConfig: FrdpCustomProfileConfig? = request.hasCustomProfile
+        ? FrdpConnectCoordinator.buildCustomConfig(from: request)
+        : nil
+
     connectQueue.async {
       do {
         try session.engine.connect(
-          withHost: host,
-          port: port,
-          username: username,
-          password: password,
-          domain: domain,
-          ignoreCertificate: ignoreCertificate,
-          performanceProfile: profile
+          withHost: request.host,
+          port: request.port,
+          username: request.username,
+          password: request.password,
+          domain: request.domain,
+          ignoreCertificate: request.ignoreCertificate,
+          performanceProfile: request.profile,
+          customPerformanceConfig: customConfig
         )
 
         DispatchQueue.main.async { [weak self] in
@@ -111,4 +111,22 @@ final class FrdpConnectCoordinator {
     pendingConnectCancels.removeAll()
     cancelPending.forEach { $0() }
   }
+
+  // MARK: - Private helpers
+
+  private static func buildCustomConfig(from request: FrdpConnectRequest) -> FrdpCustomProfileConfig {
+    let config = FrdpCustomProfileConfig()
+    config.desktopWidth            = UInt(request.customDesktopWidth  ?? 1280)
+    config.desktopHeight           = UInt(request.customDesktopHeight ?? 720)
+    config.connectionType          = UInt(request.customConnectionTypeValue ?? 2)
+    config.colorDepth              = UInt(request.customColorDepth    ?? 32)
+    config.disableWallpaper        = request.customDisableWallpaper        ?? true
+    config.disableFullWindowDrag   = request.customDisableFullWindowDrag   ?? true
+    config.disableMenuAnimations   = request.customDisableMenuAnimations   ?? true
+    config.disableThemes           = request.customDisableThemes           ?? true
+    config.allowDesktopComposition = request.customAllowDesktopComposition ?? false
+    config.allowFontSmoothing      = request.customAllowFontSmoothing      ?? false
+    return config
+  }
 }
+

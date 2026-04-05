@@ -1,3 +1,4 @@
+import "frdp_custom_performance_profile.dart";
 import "frdp_performance_profile.dart";
 import "../channel/frdp_channel_contract.dart";
 
@@ -24,7 +25,16 @@ class FrdpConnectionConfig {
   final bool ignoreCertificate;
 
   /// The performance profile to use for the connection (default is medium).
+  ///
+  /// Use [FrdpPerformanceProfile.custom] together with
+  /// [customPerformanceProfile] to configure every FreeRDP parameter
+  /// individually.
   final FrdpPerformanceProfile performanceProfile;
+
+  /// Fine-grained settings used when [performanceProfile] is
+  /// [FrdpPerformanceProfile.custom].  Must be non-null in that case;
+  /// ignored for all other profiles.
+  final FrdpCustomPerformanceProfile? customPerformanceProfile;
 
   /// The connection timeout in milliseconds (optional).
   final int? connectTimeoutMs;
@@ -41,6 +51,7 @@ class FrdpConnectionConfig {
     this.domain,
     this.ignoreCertificate = false,
     this.performanceProfile = FrdpPerformanceProfile.medium,
+    this.customPerformanceProfile,
     this.connectTimeoutMs,
   });
 
@@ -78,6 +89,13 @@ class FrdpConnectionConfig {
         "Timeout must be > 0",
       );
     }
+    if (performanceProfile == FrdpPerformanceProfile.custom &&
+        customPerformanceProfile == null) {
+      throw ArgumentError(
+        "customPerformanceProfile must be set when performanceProfile is "
+        "FrdpPerformanceProfile.custom",
+      );
+    }
 
     return <String, dynamic>{
       kHostArg: host,
@@ -87,6 +105,8 @@ class FrdpConnectionConfig {
       kDomainArg: domain,
       kIgnoreCertificateArg: ignoreCertificate,
       kPerformanceProfileArg: performanceProfile.name,
+      if (performanceProfile == FrdpPerformanceProfile.custom)
+        ...customPerformanceProfile!.toMap(),
       if (connectTimeoutMs != null) kConnectTimeoutMsArg: connectTimeoutMs,
     };
   }

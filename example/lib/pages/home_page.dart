@@ -30,6 +30,14 @@ class _HomePageState extends State<HomePage> {
 
   bool _ignoreCertificate = true;
   FrdpPerformanceProfile _performanceProfile = FrdpPerformanceProfile.medium;
+  final FrdpCustomPerformanceProfile _customPerformanceProfile =
+      FrdpCustomPerformanceProfile(
+        desktopWidth: 1380,
+        desktopHeight: 855,
+        connectionType: FrdpConnectionType.lan,
+        allowFontSmoothing: true,
+        disableWallpaper: false,
+      );
 
   @override
   void dispose() {
@@ -74,6 +82,7 @@ class _HomePageState extends State<HomePage> {
                       : null,
                   ignoreCertificate: _ignoreCertificate,
                   performanceProfile: _performanceProfile,
+                  customPerformanceProfile: _customPerformanceProfile,
                 );
               }
             },

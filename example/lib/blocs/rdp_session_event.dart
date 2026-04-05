@@ -12,6 +12,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
   final String? domain;
   final bool ignoreCertificate;
   final FrdpPerformanceProfile performanceProfile;
+  final FrdpCustomPerformanceProfile? customPerformanceProfile;
 
   const ConnectRdpSessionEvent({
     required this.host,
@@ -21,6 +22,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
     this.domain,
     this.ignoreCertificate = false,
     this.performanceProfile = FrdpPerformanceProfile.medium,
+    this.customPerformanceProfile,
   });
 }
 

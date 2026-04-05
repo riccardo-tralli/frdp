@@ -23,7 +23,17 @@
     "y": "y",
     "buttons": "buttons",
     "keyCode": "keyCode",
-    "isDown": "isDown"
+    "isDown": "isDown",
+    "customDesktopWidth": "customDesktopWidth",
+    "customDesktopHeight": "customDesktopHeight",
+    "customConnectionType": "customConnectionType",
+    "customColorDepth": "customColorDepth",
+    "customDisableWallpaper": "customDisableWallpaper",
+    "customDisableFullWindowDrag": "customDisableFullWindowDrag",
+    "customDisableMenuAnimations": "customDisableMenuAnimations",
+    "customDisableThemes": "customDisableThemes",
+    "customAllowDesktopComposition": "customAllowDesktopComposition",
+    "customAllowFontSmoothing": "customAllowFontSmoothing"
   },
   "states": {
     "disconnected": "disconnected",

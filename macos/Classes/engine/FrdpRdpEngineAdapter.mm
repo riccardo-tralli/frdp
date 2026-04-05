@@ -4,6 +4,13 @@
 #include "FrdpEngineCore.hpp"
 
 // ---------------------------------------------------------------------------
+// FrdpCustomProfileConfig
+// ---------------------------------------------------------------------------
+
+@implementation FrdpCustomProfileConfig
+@end
+
+// ---------------------------------------------------------------------------
 // FrdpRdpEngineAdapter
 //
 // Thin Objective-C bridge between Swift callers and FrdpEngineCore (C++).
@@ -64,17 +71,33 @@
                  domain:(nullable NSString*)domain
       ignoreCertificate:(BOOL)ignoreCertificate
      performanceProfile:(NSString*)performanceProfile
+  customPerformanceConfig:(nullable FrdpCustomProfileConfig*)customConfig
                   error:(NSError* __autoreleasing _Nullable*)error {
+  FrdpFreeRdpConnectConfig config;
+  config.host                = host.UTF8String;
+  config.port                = static_cast<int>(port);
+  config.username            = username.UTF8String;
+  config.password            = password.UTF8String;
+  config.domain              = domain ? domain.UTF8String : "";
+  config.ignoreCertificate   = ignoreCertificate == YES;
+  config.performanceProfile  = performanceProfile.UTF8String;
+
+  if (customConfig) {
+    config.hasCustomPerformanceProfile = true;
+    config.customPerformanceProfile.desktopWidth            = static_cast<uint32_t>(customConfig.desktopWidth);
+    config.customPerformanceProfile.desktopHeight           = static_cast<uint32_t>(customConfig.desktopHeight);
+    config.customPerformanceProfile.connectionType          = static_cast<uint32_t>(customConfig.connectionType);
+    config.customPerformanceProfile.colorDepth              = static_cast<uint32_t>(customConfig.colorDepth);
+    config.customPerformanceProfile.disableWallpaper        = customConfig.disableWallpaper == YES;
+    config.customPerformanceProfile.disableFullWindowDrag   = customConfig.disableFullWindowDrag == YES;
+    config.customPerformanceProfile.disableMenuAnimations   = customConfig.disableMenuAnimations == YES;
+    config.customPerformanceProfile.disableThemes           = customConfig.disableThemes == YES;
+    config.customPerformanceProfile.allowDesktopComposition = customConfig.allowDesktopComposition == YES;
+    config.customPerformanceProfile.allowFontSmoothing      = customConfig.allowFontSmoothing == YES;
+  }
+
   std::string msg;
-  const bool ok = _core->connect(
-      host.UTF8String,
-      static_cast<int>(port),
-      username.UTF8String,
-      password.UTF8String,
-      domain ? domain.UTF8String : "",
-      ignoreCertificate == YES,
-      performanceProfile.UTF8String,
-      msg);
+  const bool ok = _core->connect(config, msg);
 
   self.connected = ok;
   if (ok) {

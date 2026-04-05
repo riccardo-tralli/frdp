@@ -26,11 +26,25 @@ bool FrdpApplyFreeRdpSettings(rdpSettings* settings, const FrdpFreeRdpConnectCon
     ok = ok && freerdp_settings_set_string(settings, FreeRDP_Domain, config.domain.c_str());
   }
 
-  const FrdpPerformanceSettings perf = ResolvePerformanceSettings(config.performanceProfile);
+  const FrdpPerformanceSettings perf = config.hasCustomPerformanceProfile
+      ? FrdpPerformanceSettings{
+            config.customPerformanceProfile.desktopWidth,
+            config.customPerformanceProfile.desktopHeight,
+            config.customPerformanceProfile.connectionType,
+            config.customPerformanceProfile.disableWallpaper,
+            config.customPerformanceProfile.disableFullWindowDrag,
+            config.customPerformanceProfile.disableMenuAnimations,
+            config.customPerformanceProfile.disableThemes,
+            config.customPerformanceProfile.allowDesktopComposition,
+            config.customPerformanceProfile.allowFontSmoothing,
+        }
+      : ResolvePerformanceSettings(config.performanceProfile);
 
   setU32(FreeRDP_DesktopWidth, perf.desktopWidth);
   setU32(FreeRDP_DesktopHeight, perf.desktopHeight);
-  setU32(FreeRDP_ColorDepth, 32);
+  setU32(FreeRDP_ColorDepth, config.hasCustomPerformanceProfile
+             ? config.customPerformanceProfile.colorDepth
+             : 32);
   setU32(FreeRDP_ConnectionType, perf.connectionType);
   setU16(FreeRDP_SupportedColorDepths,
          static_cast<UINT16>(RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT));

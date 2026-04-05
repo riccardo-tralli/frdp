@@ -28,6 +28,16 @@ enum FrdpChannel {
     static let buttons = "buttons"
     static let keyCode = "keyCode"
     static let isDown = "isDown"
+    static let customDesktopWidth = "customDesktopWidth"
+    static let customDesktopHeight = "customDesktopHeight"
+    static let customConnectionType = "customConnectionType"
+    static let customColorDepth = "customColorDepth"
+    static let customDisableWallpaper = "customDisableWallpaper"
+    static let customDisableFullWindowDrag = "customDisableFullWindowDrag"
+    static let customDisableMenuAnimations = "customDisableMenuAnimations"
+    static let customDisableThemes = "customDisableThemes"
+    static let customAllowDesktopComposition = "customAllowDesktopComposition"
+    static let customAllowFontSmoothing = "customAllowFontSmoothing"
   }
 
   enum State {

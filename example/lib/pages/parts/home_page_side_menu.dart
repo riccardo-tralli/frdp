@@ -136,7 +136,7 @@ Widget _form(
         items: const [
           DropdownMenuItem(
             value: FrdpPerformanceProfile.low,
-            child: Text("Low (more fluid)"),
+            child: Text("Low"),
           ),
           DropdownMenuItem(
             value: FrdpPerformanceProfile.medium,
@@ -144,7 +144,11 @@ Widget _form(
           ),
           DropdownMenuItem(
             value: FrdpPerformanceProfile.high,
-            child: Text("High (more detailed)"),
+            child: Text("High"),
+          ),
+          DropdownMenuItem(
+            value: FrdpPerformanceProfile.custom,
+            child: Text("Custom"),
           ),
         ],
         onChanged: (value) => onPerformanceProfileChanged(value!),

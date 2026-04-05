@@ -67,19 +67,13 @@ bool FrdpEngineCore::validateHostResolvable(const std::string& host,
 
 // MARK: - Lifecycle ---------------------------------------------------------
 
-bool FrdpEngineCore::connect(const std::string& host,
-                              int port,
-                              const std::string& username,
-                              const std::string& password,
-                              const std::string& domain,
-                              bool ignoreCertificate,
-                              const std::string& performanceProfile,
+bool FrdpEngineCore::connect(const FrdpFreeRdpConnectConfig& config,
                               std::string& errorMessage) {
   // Host validation is pure and blocking (DNS lookup) — do it before
   // acquiring the state lock to avoid starving send*() callers.
-  std::string normalizedHost = host;
+  std::string normalizedHost = config.host;
   if (!normalizeHost(normalizedHost, errorMessage)) return false;
-  if (!validateHostResolvable(normalizedHost, port, errorMessage)) return false;
+  if (!validateHostResolvable(normalizedHost, config.port, errorMessage)) return false;
 
   std::lock_guard<std::mutex> stateLock(stateMutex_);
 
@@ -113,17 +107,10 @@ bool FrdpEngineCore::connect(const std::string& host,
     return false;
   }
 
-  const FrdpFreeRdpConnectConfig config{
-      normalizedHost,
-      port,
-      username,
-      password,
-      domain,
-      ignoreCertificate,
-      performanceProfile,
-  };
+  FrdpFreeRdpConnectConfig resolvedConfig = config;
+  resolvedConfig.host = normalizedHost;
 
-  const bool ok = FrdpApplyFreeRdpSettings(settings, config);
+  const bool ok = FrdpApplyFreeRdpSettings(settings, resolvedConfig);
 
   if (!ok) {
     errorMessage = "Unable to configure FreeRDP settings.";
@@ -147,8 +134,7 @@ bool FrdpEngineCore::connect(const std::string& host,
   return true;
 
 #else
-  (void)username; (void)password; (void)domain;
-  (void)ignoreCertificate; (void)performanceProfile;
+  (void)config;
   errorMessage = "FreeRDP headers/libraries are not available in this build. "
                  "Build/link FreeRDP to enable real embedded desktop rendering.";
   return false;

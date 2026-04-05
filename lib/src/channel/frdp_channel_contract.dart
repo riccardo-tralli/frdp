@@ -24,6 +24,17 @@ const String kYArg = "y";
 const String kButtonsArg = "buttons";
 const String kKeyCodeArg = "keyCode";
 const String kIsDownArg = "isDown";
+const String kCustomDesktopWidthArg = "customDesktopWidth";
+const String kCustomDesktopHeightArg = "customDesktopHeight";
+const String kCustomConnectionTypeArg = "customConnectionType";
+const String kCustomColorDepthArg = "customColorDepth";
+const String kCustomDisableWallpaperArg = "customDisableWallpaper";
+const String kCustomDisableFullWindowDragArg = "customDisableFullWindowDrag";
+const String kCustomDisableMenuAnimationsArg = "customDisableMenuAnimations";
+const String kCustomDisableThemesArg = "customDisableThemes";
+const String kCustomAllowDesktopCompositionArg =
+    "customAllowDesktopComposition";
+const String kCustomAllowFontSmoothingArg = "customAllowFontSmoothing";
 
 const String kDisconnectedState = "disconnected";
 const String kConnectingState = "connecting";

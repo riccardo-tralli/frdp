@@ -32,6 +32,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
           domain: event.domain,
           ignoreCertificate: event.ignoreCertificate,
           performanceProfile: event.performanceProfile,
+          customPerformanceProfile: event.customPerformanceProfile,
         ),
       );
 
@@ -119,6 +120,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
     String? domain,
     bool ignoreCertificate = false,
     FrdpPerformanceProfile performanceProfile = FrdpPerformanceProfile.medium,
+    FrdpCustomPerformanceProfile? customPerformanceProfile,
   }) => add(
     ConnectRdpSessionEvent(
       host: host,
@@ -128,6 +130,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
       domain: domain,
       ignoreCertificate: ignoreCertificate,
       performanceProfile: performanceProfile,
+      customPerformanceProfile: customPerformanceProfile,
     ),
   );
 

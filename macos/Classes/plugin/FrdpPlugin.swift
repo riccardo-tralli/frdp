@@ -54,14 +54,7 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
     }
 
     connectCoordinator.connect(
-      host: request.host,
-      port: request.port,
-      username: request.username,
-      password: request.password,
-      domain: request.domain,
-      profile: request.profile,
-      ignoreCertificate: request.ignoreCertificate,
-      timeoutMs: request.timeoutMs,
+      request: request,
       sessionStore: sessionStore,
       result: result
     )
