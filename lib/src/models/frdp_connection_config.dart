@@ -1,7 +1,8 @@
 import "frdp_performance_profile.dart";
 import "../channel/frdp_channel_contract.dart";
 
-/// Represents the configuration for establishing a remote desktop connection.
+/// Configuration for establishing a remote desktop connection, including
+/// connection details, authentication credentials, and performance settings.
 class FrdpConnectionConfig {
   /// The host or IP address of the remote desktop to connect to.
   final String host;
@@ -28,6 +29,10 @@ class FrdpConnectionConfig {
   /// The connection timeout in milliseconds (optional).
   final int? connectTimeoutMs;
 
+  /// Configuration for establishing a remote desktop connection.
+  ///
+  /// The [host], [username], and [password] fields are required, while the
+  /// others have default values or are optional.
   const FrdpConnectionConfig({
     required this.host,
     this.port = 3389,

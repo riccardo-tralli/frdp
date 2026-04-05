@@ -9,7 +9,7 @@ class FrdpSession {
   /// The current connection state of the session.
   final FrdpConnectionState state;
 
-  /// Constructs a [FrdpSession] instance with the given [id] and [state].
+  /// A [FrdpSession] instance with the given [id] and [state].
   const FrdpSession({required this.id, required this.state});
 
   /// Creates a [FrdpSession] instance from a map of key-value pairs.

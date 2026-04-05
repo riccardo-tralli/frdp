@@ -2,16 +2,32 @@ import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 
+import "../src/channel/frdp_channel_contract.dart";
 import "../src/channel/frdp_platform_interface.dart";
 
 /// A widget that displays the remote desktop session.
-/// It uses an [AppKitView] on macOS to render the RDP session, and shows a
-/// placeholder message on other platforms.
 class FrdpView extends StatelessWidget {
   /// The unique identifier of the RDP session.
   final String sessionId;
 
-  /// Constructs a [FrdpView] instance with the given [sessionId].
+  /// Displays the remote desktop session associated with the given [sessionId].
+  ///
+  /// It also captures keyboard and mouse events and forwards them to the native side.
+  ///
+  /// The [sessionId] parameter is required to identify which RDP session to
+  /// display and interact with. Make sure to provide a valid session ID obtained
+  /// from a successful connection.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// final frdp = Frdp();
+  /// final session = await frdp.connect(FrdpConnectionConfig(
+  ///   host: "192.168.1.1",
+  ///   username: "user",
+  ///   password: "password",
+  /// ));
+  /// final frdpView = FrdpView(sessionId: session.id);
+  /// ```
   const FrdpView({required this.sessionId, super.key});
 
   @override
@@ -31,7 +47,7 @@ class FrdpView extends StatelessWidget {
     // On macOS, use an AppKitView to render the RDP session.
     final appKitView = AppKitView(
       viewType: "frdp/view",
-      creationParams: <String, dynamic>{"sessionId": sessionId},
+      creationParams: <String, dynamic>{kSessionIdArg: sessionId},
       creationParamsCodec: const StandardMessageCodec(),
     );
 
