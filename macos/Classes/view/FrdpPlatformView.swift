@@ -65,7 +65,7 @@ final class FrdpPlatformView: NSView {
   }
 
   private func showPlaceholder() {
-    let label = NSTextField(labelWithString: "Embedded RDP session not found")
+    let label = NSTextField(labelWithString: "RDP session not found")
     label.textColor = .white
     label.translatesAutoresizingMaskIntoConstraints = false
     addSubview(label)

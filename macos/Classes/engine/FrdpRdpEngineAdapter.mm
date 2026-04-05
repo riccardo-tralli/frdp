@@ -30,7 +30,6 @@
   _renderer = [[FrdpFrameRenderer alloc] init];
 
   _containerView = [[FrdpRenderContainerView alloc] initWithFrameView:_renderer.frameView];
-  [_containerView showIdleStatus];
   self.renderView = _containerView;
 
   // Wire frame callback: engine core → renderer (called from worker thread).
@@ -46,9 +45,6 @@
       if (!strongSelf) return;
 
       strongSelf.connected = connected ? YES : NO;
-      if (!connected) {
-        [strongSelf->_containerView showDisconnectedStatus];
-      }
 
       if (strongSelf.connectionStateDidChange) {
         strongSelf.connectionStateDidChange(connected ? YES : NO);
@@ -82,11 +78,9 @@
 
   self.connected = ok;
   if (ok) {
-    [_containerView showConnectedStatusForHost:host port:port];
     return YES;
   }
 
-  [_containerView showUnavailableStatus];
   if (error) {
     *error = [NSError errorWithDomain:@"frdp.engine"
                                  code:1001
@@ -98,7 +92,6 @@
 - (void)disconnect {
   _core->disconnect();
   self.connected = NO;
-  [_containerView showDisconnectedStatus];
 }
 
 // MARK: - Input forwarding --------------------------------------------------
