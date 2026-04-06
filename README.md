@@ -9,11 +9,12 @@
 
 A Flutter plugin for Remote Desktop Protocol (RDP) connections.
 
-`frdp` provides:
+`frdp` features:
 
 - A Dart API to open and manage RDP sessions.
-- A native macOS platform view to render the remote desktop in Flutter (widget).
-- Input forwarding for keyboard and mouse events.
+- A native macOS platform view widget to render the remote desktop in Flutter.
+- Input forwarding for keyboard, mouse, and touchpad events.
+- Support for GDI and GFX rendering backends.
 
 ![demo](docs/assets/demo.gif)
 
@@ -85,8 +86,33 @@ final session = await frdp.connect(
     password: "rdp-password",
     domain: "WORKGROUP", // optional
     ignoreCertificate: true, // optional, default false
+    renderingBackend: FrdpRenderingBackend.gdi, // optional, default gdi
     performanceProfile: FrdpPerformanceProfile.medium, // optional, default medium
     connectTimeoutMs: 15000, // optional
+  ),
+);
+```
+
+Use a custom profile when you need fine-grained control over FreeRDP settings:
+
+```dart
+final session = await frdp.connect(
+  const FrdpConnectionConfig(
+    host: "192.168.1.1",
+    username: "rdp-user",
+    password: "rdp-password",
+    renderingBackend: FrdpRenderingBackend.gfx,
+    performanceProfile: FrdpPerformanceProfile.custom,
+    customPerformanceProfile: FrdpCustomPerformanceProfile(
+      desktopWidth: 1920,
+      desktopHeight: 1080,
+      connectionType: FrdpConnectionType.lan,
+      colorDepth: 32,
+      disableWallpaper: false,
+      allowFontSmoothing: true,
+      gfxH264: true,
+      gfxAvc444: true,
+    ),
   ),
 );
 ```
@@ -100,7 +126,7 @@ FrdpView(sessionId: session.id)
 Disconnect when done:
 
 ```dart
-await frdp.disconnect(sessionId: session.id);
+await frdp.disconnect(session.id);
 ```
 
 ## FreeRDP requirement (macOS)
@@ -141,7 +167,10 @@ Main exports:
 - `FrdpConnectionConfig`: connection settings and validation
 - `FrdpSession`: session identifier and current state
 - `FrdpConnectionState`: `disconnected`, `connecting`, `connected`, `error`
+- `FrdpRenderingBackend`: rendering backend (`gdi`, `gfx`)
 - `FrdpPerformanceProfile`: preset profile for connection quality/performance trade-offs
+- `FrdpCustomPerformanceProfile`: fine-grained FreeRDP display/performance settings
+- `FrdpConnectionType`: link-type hint used by custom profile
 - `FrdpView`: RDP rendering widget
 
 ## Input forwarding
