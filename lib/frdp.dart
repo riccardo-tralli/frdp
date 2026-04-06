@@ -16,7 +16,6 @@ export "src/models/frdp_session.dart";
   TODO: add advanced graphic configuration options
   TODO: add clipboard support
   TODO: improve error handling and reporting
-  TODO: improve performance
   TODO: add Windows support
   TODO: add Linux support
 */

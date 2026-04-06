@@ -18,6 +18,8 @@
     _image = nullptr;
     self.wantsLayer = YES;
     self.layer.contentsGravity = kCAGravityResize;
+    self.layer.opaque = YES;
+    self.layer.actions = @{@"contents": [NSNull null]};
   }
   return self;
 }
@@ -65,7 +67,9 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
   self = [super init];
   if (self) {
     _pending.store(false);
-    _processingQueue = dispatch_queue_create("com.frdp.frame-processing", DISPATCH_QUEUE_SERIAL);
+    _processingQueue = dispatch_queue_create("com.frdp.frame-processing",
+        dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL,
+                                                QOS_CLASS_USER_INTERACTIVE, 0));
     _frameView = [[FrdpFrameView alloc] init];
     _frameView.translatesAutoresizingMaskIntoConstraints = NO;
   }
@@ -108,7 +112,7 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
 
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     CGBitmapInfo bitmapInfo =
-        static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little);
+        static_cast<CGBitmapInfo>(kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little);
     CGImageRef image = CGImageCreate(
         static_cast<size_t>(capturedWidth),
         static_cast<size_t>(capturedHeight),

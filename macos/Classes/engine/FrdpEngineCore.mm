@@ -3,6 +3,7 @@
 #include "FrdpInputMapper.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
 #include <chrono>
@@ -145,6 +146,17 @@ void FrdpEngineCore::disconnect() {
   const bool wasConnected = connected_.load();
   running_.store(false);
 
+  // Wake the worker's WaitForMultipleObjects before joining, otherwise
+  // the thread blocks indefinitely waiting for the next network event.
+#if FRDP_HAS_FREERDP
+  {
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+    if (instance_) freerdp_abort_connect_context(instance_->context);
+  }
+#endif
+
+  if (worker_.joinable()) worker_.join();
+
   {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
 #if FRDP_HAS_FREERDP
@@ -160,15 +172,7 @@ void FrdpEngineCore::disconnect() {
     lastPointerY_ = 0;
   }
 
-  // Always join if joinable: runLoop may have already flipped running_ to false
-  // after a remote disconnect, leaving a joinable thread behind.
-  if (worker_.joinable()) {
-    worker_.join();
-  }
-
-  if (wasConnected) {
-    notifyConnectionStateChange(false);
-  }
+  if (wasConnected) notifyConnectionStateChange(false);
 }
 
 // MARK: - Input -------------------------------------------------------------
@@ -275,12 +279,34 @@ void FrdpEngineCore::sendMacKey(int keyCode, bool isDown) {
 // MARK: - Worker loop -------------------------------------------------------
 
 void FrdpEngineCore::runLoop() {
+  // 1ms timeout: keeps frame delivery latency under 2ms.
+  // Do NOT raise — 16ms causes visible input/rendering lag even at 30fps.
+  constexpr DWORD kMaxEventHandles = 64;
+  constexpr DWORD kWaitTimeoutMs   = 5;
+
   while (running_.load()) {
 #if FRDP_HAS_FREERDP
+    HANDLE handles[kMaxEventHandles];
+    DWORD  eventCount = 0;
+    {
+      std::lock_guard<std::mutex> lock(stateMutex_);
+      if (!instance_) break;
+      eventCount = freerdp_get_event_handles(instance_->context, handles, kMaxEventHandles);
+    }
+
+    if (eventCount > 0) {
+      WaitForMultipleObjects(eventCount, handles, FALSE, kWaitTimeoutMs);
+    } else {
+      // No handles yet (e.g., mid-connect): yield briefly.
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    if (!running_.load()) break;
+
     bool connectionDropped = false;
     {
       std::lock_guard<std::mutex> lock(stateMutex_);
-      if (instance_ && !freerdp_check_fds(instance_.get())) {
+      if (instance_ && !freerdp_check_event_handles(instance_->context)) {
         connected_.store(false);
         running_.store(false);
         connectionDropped = true;
@@ -290,9 +316,8 @@ void FrdpEngineCore::runLoop() {
       notifyConnectionStateChange(false);
       break;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(16));
 #else
-    std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 #endif
   }
 }
@@ -342,6 +367,10 @@ std::mutex& FrdpEngineCore::instanceOwnerMutex() {
 
 BOOL FrdpEngineCore::onPreConnect(freerdp* instance) {
   if (!instance || !instance->context) return FALSE;
+  PubSub_SubscribeChannelConnected(instance->context->pubSub,
+                                   &FrdpEngineCore::onChannelConnected);
+  PubSub_SubscribeChannelDisconnected(instance->context->pubSub,
+                                      &FrdpEngineCore::onChannelDisconnected);
   (void)freerdp_client_load_addins(instance->context->channels,
                                    instance->context->settings);
   return TRUE;
@@ -356,6 +385,28 @@ BOOL FrdpEngineCore::onPostConnect(freerdp* instance) {
     instance->context->update->EndPaint   = &FrdpEngineCore::onEndPaint;
   }
   return TRUE;
+}
+
+void FrdpEngineCore::onChannelConnected(void* context, const ChannelConnectedEventArgs* e) {
+  if (!context || !e || !e->pInterface) return;
+  auto* rdpCtx = static_cast<rdpContext*>(context);
+  if (!rdpCtx->instance || !rdpCtx->gdi) return;
+  if (lookupInstanceOwner(rdpCtx->instance) == nullptr) return;
+  if (strcmp(e->name, RDPGFX_CHANNEL_NAME) == 0) {
+    gdi_graphics_pipeline_init(rdpCtx->gdi,
+                               static_cast<RdpgfxClientContext*>(e->pInterface));
+  }
+}
+
+void FrdpEngineCore::onChannelDisconnected(void* context, const ChannelDisconnectedEventArgs* e) {
+  if (!context || !e || !e->pInterface) return;
+  auto* rdpCtx = static_cast<rdpContext*>(context);
+  if (!rdpCtx->instance || !rdpCtx->gdi) return;
+  if (lookupInstanceOwner(rdpCtx->instance) == nullptr) return;
+  if (strcmp(e->name, RDPGFX_CHANNEL_NAME) == 0) {
+    gdi_graphics_pipeline_uninit(rdpCtx->gdi,
+                                 static_cast<RdpgfxClientContext*>(e->pInterface));
+  }
 }
 
 BOOL FrdpEngineCore::onBeginPaint(rdpContext* /*context*/) { return TRUE; }
