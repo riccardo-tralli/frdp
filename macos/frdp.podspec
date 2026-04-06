@@ -3,33 +3,25 @@
 # Run `pod lib lint frdp.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  freerdp_prefix = ENV['FREERDP_PREFIX']
-  if freerdp_prefix.nil? || freerdp_prefix.empty?
-    freerdp_prefix = '/opt/homebrew/opt/freerdp'
-  end
-
-  # Allow explicit override first (e.g. FREERDP_EXCLUDED_ARCHS=x86_64 or arm64).
-  excluded_archs = ENV['FREERDP_EXCLUDED_ARCHS']
+  freerdp_prefix = File.expand_path('.freerdp/install', __dir__)
+  freerdp_deps_prefix = File.expand_path('.freerdp/deps/install', __dir__)
+  freerdp_arch = ENV.fetch('FREERDP_ARCH', `uname -m`.to_s.strip)
+  deployment_target = ENV.fetch('FRDP_MACOS_DEPLOYMENT_TARGET', '10.15')
 
   # Auto-detect missing architecture slice from the local FreeRDP dylib.
-  if excluded_archs.nil? || excluded_archs.empty?
-    dylib = File.join(freerdp_prefix, 'lib', 'libfreerdp3.3.dylib')
-    arch_info = File.exist?(dylib) ? `lipo -info "#{dylib}" 2>/dev/null`.to_s : ''
+  has_arm64 = freerdp_arch.include?('arm64')
+  has_x86_64 = freerdp_arch.include?('x86_64')
 
-    has_arm64 = arch_info.include?('arm64')
-    has_x86_64 = arch_info.include?('x86_64')
-
-    if has_arm64 && !has_x86_64
-      excluded_archs = 'x86_64'
-    elsif has_x86_64 && !has_arm64
-      excluded_archs = 'arm64'
-    else
-      excluded_archs = ''
-    end
+  if has_arm64 && !has_x86_64
+    excluded_archs = 'x86_64'
+  elsif has_x86_64 && !has_arm64
+    excluded_archs = 'arm64'
+  else
+    excluded_archs = ''
   end
 
   include_flags = "-I#{freerdp_prefix}/include/freerdp3 -I#{freerdp_prefix}/include/winpr3"
-  ld_flags = "-L#{freerdp_prefix}/lib -Wl,-rpath,#{freerdp_prefix}/lib -lfreerdp3 -lfreerdp-client3 -lwinpr3"
+  ld_flags = "-L#{freerdp_prefix}/lib -L#{freerdp_deps_prefix}/lib -Wl,-rpath,#{freerdp_prefix}/lib -Wl,-rpath,#{freerdp_deps_prefix}/lib -lfreerdp3 -lfreerdp-client3 -lwinpr3 -lssl -lcrypto -ljansson -framework Carbon"
 
   s.name             = 'frdp'
   s.version          = '0.0.1'
@@ -43,6 +35,12 @@ Pod::Spec.new do |s|
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
 
+  # Build and cache FreeRDP locally from the official repository so plugin
+  # consumers do not need a system-wide FreeRDP installation.
+  s.prepare_command = <<-CMD
+    bash ./scripts/ensure_embedded_freerdp.sh
+  CMD
+
   # If your plugin requires a privacy manifest, for example if it collects user
   # data, update the PrivacyInfo.xcprivacy file to describe your plugin's
   # privacy impact, and then uncomment this line. For more information,
@@ -51,15 +49,17 @@ Pod::Spec.new do |s|
 
   s.dependency 'FlutterMacOS'
 
-  s.platform = :osx, '10.11'
+  s.platform = :osx, deployment_target
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'OTHER_CPLUSPLUSFLAGS' => "$(inherited) #{include_flags}",
     'OTHER_LDFLAGS' => "$(inherited) #{ld_flags}",
     'HEADER_SEARCH_PATHS' => "$(inherited) #{freerdp_prefix}/include",
+    'MACOSX_DEPLOYMENT_TARGET' => deployment_target,
     'EXCLUDED_ARCHS[sdk=macosx*]' => excluded_archs
   }
   s.user_target_xcconfig = {
+    'MACOSX_DEPLOYMENT_TARGET' => deployment_target,
     'EXCLUDED_ARCHS[sdk=macosx*]' => excluded_archs
   }
   s.swift_version = '5.0'

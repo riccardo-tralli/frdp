@@ -129,35 +129,46 @@ Disconnect when done:
 await frdp.disconnect(session.id);
 ```
 
-## FreeRDP requirement (macOS)
+## FreeRDP Library
 
-[FreeRDP](https://github.com/FreeRDP/FreeRDP) is required. Install with Homebrew:
+The plugin builds and caches [FreeRDP](https://github.com/FreeRDP/FreeRDP) from source automatically. FreeRDP is expected to be provided through this embedded bootstrap flow rather than through a preinstalled package manager copy.
 
-```bash
-brew install freerdp
-```
+Default behavior:
 
-By default, the plugin looks in:
+- During `pod install` / first macOS build, `macos/scripts/ensure_embedded_freerdp.sh` clones FreeRDP from the official repo and builds static libraries.
+- Build artifacts are cached in `macos/.freerdp/install` and reused on subsequent builds.
+- Dependencies are also built and cached in `macos/.freerdp/deps/install` by default.
+- The embedded build disables standalone FreeRDP desktop clients such as SDL/X11, WinPR helper executables, and optional media codec stacks like Opus/FFmpeg, keeping only the libraries/channels needed by the plugin.
 
-```text
-/opt/homebrew/opt/freerdp
-```
+Build prerequisites:
 
-You can override this path with `FREERDP_PREFIX`:
+- `git`
+- `cmake`
+- `ninja` (optional, for faster builds)
+- `curl`, `perl`, `make` (required to build embedded OpenSSL)
 
-```bash
-export FREERDP_PREFIX="$(brew --prefix freerdp)"
-```
-
-If your local FreeRDP build has only one architecture slice, you can force excluded archs:
+Useful environment variables:
 
 ```bash
-export FREERDP_EXCLUDED_ARCHS="x86_64"
-# or
-export FREERDP_EXCLUDED_ARCHS="arm64"
-```
+# Pin to a specific upstream ref/tag/branch
+export FREERDP_GIT_REF=3.24.2
 
-For distribution to other devices, ensure FreeRDP is also available on target machines, or bundle the required dylibs and configure runtime paths accordingly.
+# Change repo (fork/mirror)
+export FREERDP_GIT_URL=https://github.com/FreeRDP/FreeRDP.git
+
+# Architecture to build into the static libraries
+export FREERDP_ARCH="arm64"
+
+# macOS deployment target for the embedded static libraries and pod target
+export FRDP_MACOS_DEPLOYMENT_TARGET=10.15
+
+# Embedded OpenSSL version
+export OPENSSL_VERSION=3.3.2
+
+# Embedded jansson source/ref
+export JANSSON_GIT_URL=https://github.com/akheron/jansson.git
+export JANSSON_GIT_REF=v2.14
+```
 
 ## Public API overview
 
