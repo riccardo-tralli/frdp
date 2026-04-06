@@ -24,6 +24,13 @@ struct FrdpCustomPerformanceConfig {
   bool     disableThemes           = true;
   bool     allowDesktopComposition = false;
   bool     allowFontSmoothing      = false;
+  bool     gfxSurfaceCommandsEnabled = false;
+  bool     gfxProgressive            = false;
+  bool     gfxProgressiveV2          = false;
+  bool     gfxPlanar                 = false;
+  bool     gfxH264                   = false;
+  bool     gfxAvc444                 = false;
+  bool     gfxAvc444V2               = false;
 };
 
 struct FrdpFreeRdpConnectConfig {
@@ -34,6 +41,7 @@ struct FrdpFreeRdpConnectConfig {
   std::string domain;
   bool        ignoreCertificate;
   std::string performanceProfile;         // used only when !hasCustomPerformanceProfile
+  std::string renderingBackend = "gdi";
   bool        hasCustomPerformanceProfile = false;
   FrdpCustomPerformanceConfig customPerformanceProfile;
 };

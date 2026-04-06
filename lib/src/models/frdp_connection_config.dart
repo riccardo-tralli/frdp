@@ -1,5 +1,6 @@
 import "frdp_custom_performance_profile.dart";
 import "frdp_performance_profile.dart";
+import "frdp_rendering_backend.dart";
 import "../channel/frdp_channel_contract.dart";
 
 /// Configuration for establishing a remote desktop connection, including
@@ -23,6 +24,9 @@ class FrdpConnectionConfig {
   /// Whether to ignore certificate errors when connecting to the remote
   /// desktop (default is false).
   final bool ignoreCertificate;
+
+  /// The rendering backend to use for the connection (default is GDI).
+  final FrdpRenderingBackend renderingBackend;
 
   /// The performance profile to use for the connection (default is medium).
   ///
@@ -50,6 +54,7 @@ class FrdpConnectionConfig {
     required this.password,
     this.domain,
     this.ignoreCertificate = false,
+    this.renderingBackend = FrdpRenderingBackend.gdi,
     this.performanceProfile = FrdpPerformanceProfile.medium,
     this.customPerformanceProfile,
     this.connectTimeoutMs,
@@ -104,6 +109,7 @@ class FrdpConnectionConfig {
       kPasswordArg: password,
       kDomainArg: domain,
       kIgnoreCertificateArg: ignoreCertificate,
+      kRenderingBackendArg: renderingBackend.name,
       kPerformanceProfileArg: performanceProfile.name,
       if (performanceProfile == FrdpPerformanceProfile.custom)
         ...customPerformanceProfile!.toMap(),

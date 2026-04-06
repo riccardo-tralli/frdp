@@ -71,6 +71,7 @@
                  domain:(nullable NSString*)domain
       ignoreCertificate:(BOOL)ignoreCertificate
      performanceProfile:(NSString*)performanceProfile
+              renderingBackend:(NSString*)renderingBackend
   customPerformanceConfig:(nullable FrdpCustomProfileConfig*)customConfig
                   error:(NSError* __autoreleasing _Nullable*)error {
   FrdpFreeRdpConnectConfig config;
@@ -81,6 +82,7 @@
   config.domain              = domain ? domain.UTF8String : "";
   config.ignoreCertificate   = ignoreCertificate == YES;
   config.performanceProfile  = performanceProfile.UTF8String;
+  config.renderingBackend    = renderingBackend.UTF8String;
 
   if (customConfig) {
     config.hasCustomPerformanceProfile = true;
@@ -94,6 +96,13 @@
     config.customPerformanceProfile.disableThemes           = customConfig.disableThemes == YES;
     config.customPerformanceProfile.allowDesktopComposition = customConfig.allowDesktopComposition == YES;
     config.customPerformanceProfile.allowFontSmoothing      = customConfig.allowFontSmoothing == YES;
+    config.customPerformanceProfile.gfxSurfaceCommandsEnabled = customConfig.gfxSurfaceCommandsEnabled == YES;
+    config.customPerformanceProfile.gfxProgressive            = customConfig.gfxProgressive == YES;
+    config.customPerformanceProfile.gfxProgressiveV2          = customConfig.gfxProgressiveV2 == YES;
+    config.customPerformanceProfile.gfxPlanar                 = customConfig.gfxPlanar == YES;
+    config.customPerformanceProfile.gfxH264                   = customConfig.gfxH264 == YES;
+    config.customPerformanceProfile.gfxAvc444                 = customConfig.gfxAvc444 == YES;
+    config.customPerformanceProfile.gfxAvc444V2               = customConfig.gfxAvc444V2 == YES;
   }
 
   std::string msg;

@@ -11,6 +11,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
   final String password;
   final String? domain;
   final bool ignoreCertificate;
+  final FrdpRenderingBackend renderingBackend;
   final FrdpPerformanceProfile performanceProfile;
   final FrdpCustomPerformanceProfile? customPerformanceProfile;
 
@@ -21,6 +22,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
     required this.password,
     this.domain,
     this.ignoreCertificate = false,
+    this.renderingBackend = FrdpRenderingBackend.gdi,
     this.performanceProfile = FrdpPerformanceProfile.medium,
     this.customPerformanceProfile,
   });

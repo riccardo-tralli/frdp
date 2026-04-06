@@ -34,15 +34,38 @@ class FrdpCustomPerformanceProfile {
   /// Allow font smoothing (ClearType).
   final bool allowFontSmoothing;
 
+  /// Enable RDP surface commands when using the GFX backend.
+  final bool gfxSurfaceCommandsEnabled;
+
+  /// Enable progressive GFX codec when using the GFX backend.
+  final bool gfxProgressive;
+
+  /// Enable progressive v2 GFX codec when using the GFX backend.
+  final bool gfxProgressiveV2;
+
+  /// Enable planar GFX codec when using the GFX backend.
+  final bool gfxPlanar;
+
+  /// Enable H.264 GFX codec when using the GFX backend.
+  final bool gfxH264;
+
+  /// Enable AVC444 GFX mode when using the GFX backend.
+  final bool gfxAvc444;
+
+  /// Enable AVC444v2 GFX mode when using the GFX backend.
+  final bool gfxAvc444V2;
+
   /// A fully-custom performance profile that gives fine-grained control over
   /// every FreeRDP display and user-experience parameter.
   ///
-  /// Use this instead of, or in addition to, the [FrdpPerformanceProfile] preset
-  /// enum when you need to tune individual settings such as desktop resolution,
-  /// connection type, colour depth, or individual experience flags.
+  /// The [desktopWidth] and [desktopHeight] parameters are required, while the
+  /// other parameters have default values.
   ///
-  /// Pass an instance as [FrdpConnectionConfig.customPerformanceProfile].  When
-  /// set, it takes precedence over [FrdpConnectionConfig.performanceProfile].
+  /// [FrdpConnectionConfig.performanceProfile] must be set to
+  /// [FrdpPerformanceProfile.custom] in the [FrdpConnectionConfig].
+  ///
+  /// Note that some parameters (e.g. GFX codec settings) will only have an effect
+  /// if the rendering backend supports them (active only with the GFX backend).
   ///
   /// Example:
   /// ```dart
@@ -50,12 +73,26 @@ class FrdpCustomPerformanceProfile {
   ///   host: '192.168.1.1',
   ///   username: 'user',
   ///   password: 'pass',
+  ///   performanceProfile: FrdpPerformanceProfile.custom,
   ///   customPerformanceProfile: FrdpCustomPerformanceProfile(
   ///     desktopWidth: 1920,
   ///     desktopHeight: 1080,
   ///     connectionType: FrdpConnectionType.lan,
   ///     allowFontSmoothing: true,
   ///     disableWallpaper: false,
+  ///   ),
+  /// )
+  /// // GFX codec settings example:
+  /// FrdpConnectionConfig(
+  ///   host: '192.168.1.1',
+  ///   username: 'user',
+  ///   password: 'pass',
+  ///   renderingBackend: FrdpRenderingBackend.gfx,
+  ///   performanceProfile: FrdpPerformanceProfile.custom,
+  ///   customPerformanceProfile: FrdpCustomPerformanceProfile(
+  ///     desktopWidth: 1920,
+  ///     desktopHeight: 1080,
+  ///     gfxH264: true,
   ///   ),
   /// )
   /// ```
@@ -70,6 +107,13 @@ class FrdpCustomPerformanceProfile {
     this.disableThemes = true,
     this.allowDesktopComposition = false,
     this.allowFontSmoothing = false,
+    this.gfxSurfaceCommandsEnabled = false,
+    this.gfxProgressive = false,
+    this.gfxProgressiveV2 = false,
+    this.gfxPlanar = false,
+    this.gfxH264 = false,
+    this.gfxAvc444 = false,
+    this.gfxAvc444V2 = false,
   });
 
   /// Serialises the profile to a flat [Map] ready for the platform channel.
@@ -84,5 +128,12 @@ class FrdpCustomPerformanceProfile {
     kCustomDisableThemesArg: disableThemes,
     kCustomAllowDesktopCompositionArg: allowDesktopComposition,
     kCustomAllowFontSmoothingArg: allowFontSmoothing,
+    kCustomGfxSurfaceCommandsEnabledArg: gfxSurfaceCommandsEnabled,
+    kCustomGfxProgressiveArg: gfxProgressive,
+    kCustomGfxProgressiveV2Arg: gfxProgressiveV2,
+    kCustomGfxPlanarArg: gfxPlanar,
+    kCustomGfxH264Arg: gfxH264,
+    kCustomGfxAvc444Arg: gfxAvc444,
+    kCustomGfxAvc444V2Arg: gfxAvc444V2,
   };
 }

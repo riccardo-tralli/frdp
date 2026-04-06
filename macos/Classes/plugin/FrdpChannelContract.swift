@@ -21,6 +21,7 @@ enum FrdpChannel {
     static let password = "password"
     static let domain = "domain"
     static let ignoreCertificate = "ignoreCertificate"
+    static let renderingBackend = "renderingBackend"
     static let performanceProfile = "performanceProfile"
     static let connectTimeoutMs = "connectTimeoutMs"
     static let x = "x"
@@ -38,6 +39,13 @@ enum FrdpChannel {
     static let customDisableThemes = "customDisableThemes"
     static let customAllowDesktopComposition = "customAllowDesktopComposition"
     static let customAllowFontSmoothing = "customAllowFontSmoothing"
+    static let customGfxSurfaceCommandsEnabled = "customGfxSurfaceCommandsEnabled"
+    static let customGfxProgressive = "customGfxProgressive"
+    static let customGfxProgressiveV2 = "customGfxProgressiveV2"
+    static let customGfxPlanar = "customGfxPlanar"
+    static let customGfxH264 = "customGfxH264"
+    static let customGfxAvc444 = "customGfxAvc444"
+    static let customGfxAvc444V2 = "customGfxAvc444V2"
   }
 
   enum State {

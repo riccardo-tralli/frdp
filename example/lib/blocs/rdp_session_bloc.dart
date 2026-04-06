@@ -31,6 +31,10 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
           password: event.password,
           domain: event.domain,
           ignoreCertificate: event.ignoreCertificate,
+          renderingBackend:
+              event.performanceProfile == FrdpPerformanceProfile.custom
+              ? FrdpRenderingBackend.gfx
+              : event.renderingBackend,
           performanceProfile: event.performanceProfile,
           customPerformanceProfile: event.customPerformanceProfile,
         ),
@@ -119,6 +123,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
     required String password,
     String? domain,
     bool ignoreCertificate = false,
+    FrdpRenderingBackend renderingBackend = FrdpRenderingBackend.gdi,
     FrdpPerformanceProfile performanceProfile = FrdpPerformanceProfile.medium,
     FrdpCustomPerformanceProfile? customPerformanceProfile,
   }) => add(
@@ -129,6 +134,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
       password: password,
       domain: domain,
       ignoreCertificate: ignoreCertificate,
+      renderingBackend: renderingBackend,
       performanceProfile: performanceProfile,
       customPerformanceProfile: customPerformanceProfile,
     ),

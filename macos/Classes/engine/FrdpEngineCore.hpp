@@ -15,8 +15,12 @@
 #include <freerdp/client.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/gdi/gdi.h>
+#include <freerdp/gdi/gfx.h>
+#include <freerdp/client/rdpgfx.h>
+#include <freerdp/event.h>
 #include <freerdp/settings.h>
 #include <freerdp/settings_types.h>
+#include <winpr/synch.h>
 #else
 #define FRDP_HAS_FREERDP 0
 #endif
@@ -114,6 +118,9 @@ class FrdpEngineCore {
   static BOOL onPostConnect(freerdp* instance);
   static BOOL onBeginPaint(rdpContext* context);
   static BOOL onEndPaint(rdpContext* context);
+
+  static void onChannelConnected(void* context, const ChannelConnectedEventArgs* e);
+  static void onChannelDisconnected(void* context, const ChannelDisconnectedEventArgs* e);
 
   void emitFrameFromFreeRdp();
 

@@ -17,6 +17,7 @@
     "password": "password",
     "domain": "domain",
     "ignoreCertificate": "ignoreCertificate",
+    "renderingBackend": "renderingBackend",
     "performanceProfile": "performanceProfile",
     "connectTimeoutMs": "connectTimeoutMs",
     "x": "x",
@@ -33,7 +34,14 @@
     "customDisableMenuAnimations": "customDisableMenuAnimations",
     "customDisableThemes": "customDisableThemes",
     "customAllowDesktopComposition": "customAllowDesktopComposition",
-    "customAllowFontSmoothing": "customAllowFontSmoothing"
+    "customAllowFontSmoothing": "customAllowFontSmoothing",
+    "customGfxSurfaceCommandsEnabled": "customGfxSurfaceCommandsEnabled",
+    "customGfxProgressive": "customGfxProgressive",
+    "customGfxProgressiveV2": "customGfxProgressiveV2",
+    "customGfxPlanar": "customGfxPlanar",
+    "customGfxH264": "customGfxH264",
+    "customGfxAvc444": "customGfxAvc444",
+    "customGfxAvc444V2": "customGfxAvc444V2"
   },
   "states": {
     "disconnected": "disconnected",

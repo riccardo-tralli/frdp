@@ -1,8 +1,22 @@
 #include "FrdpFreeRdpSettingsApplier.hpp"
 #include "FrdpPerformanceProfiles.hpp"
 
+#include <algorithm>
+#include <cctype>
+
 #if FRDP_HAS_FREERDP_SETTINGS
 #include <freerdp/settings_types.h>
+
+namespace {
+
+bool IsGfxBackend(const std::string& value) {
+  std::string normalized = value;
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return normalized == "gfx";
+}
+
+}  // namespace
 
 bool FrdpApplyFreeRdpSettings(rdpSettings* settings, const FrdpFreeRdpConnectConfig& config) {
   if (!settings) return false;
@@ -73,15 +87,44 @@ bool FrdpApplyFreeRdpSettings(rdpSettings* settings, const FrdpFreeRdpConnectCon
   setBool(FreeRDP_HasExtendedMouseEvent, TRUE);
   setBool(FreeRDP_HasHorizontalWheel, TRUE);
 
-  // GDI-based framebuffer path — disable GPU pipeline
-  setBool(FreeRDP_SupportGraphicsPipeline, FALSE);
-  setBool(FreeRDP_SurfaceCommandsEnabled, FALSE);
-  setBool(FreeRDP_GfxProgressive, FALSE);
-  setBool(FreeRDP_GfxProgressiveV2, FALSE);
-  setBool(FreeRDP_GfxPlanar, FALSE);
-  setBool(FreeRDP_GfxH264, FALSE);
-  setBool(FreeRDP_GfxAVC444, FALSE);
-  setBool(FreeRDP_GfxAVC444v2, FALSE);
+    const bool useGfxBackend = IsGfxBackend(config.renderingBackend);
+    const bool gfxSurfaceCommandsEnabled =
+      useGfxBackend && config.hasCustomPerformanceProfile
+        ? config.customPerformanceProfile.gfxSurfaceCommandsEnabled
+        : false;
+    const bool gfxProgressive =
+      useGfxBackend && config.hasCustomPerformanceProfile
+        ? config.customPerformanceProfile.gfxProgressive
+        : false;
+    const bool gfxProgressiveV2 =
+      useGfxBackend && config.hasCustomPerformanceProfile
+        ? config.customPerformanceProfile.gfxProgressiveV2
+        : false;
+    const bool gfxPlanar =
+      useGfxBackend && config.hasCustomPerformanceProfile
+        ? config.customPerformanceProfile.gfxPlanar
+        : false;
+    const bool gfxH264 =
+      useGfxBackend && config.hasCustomPerformanceProfile
+        ? config.customPerformanceProfile.gfxH264
+        : false;
+    const bool gfxAvc444 =
+      useGfxBackend && config.hasCustomPerformanceProfile
+        ? config.customPerformanceProfile.gfxAvc444
+        : false;
+    const bool gfxAvc444V2 =
+      useGfxBackend && config.hasCustomPerformanceProfile
+        ? config.customPerformanceProfile.gfxAvc444V2
+        : false;
+
+    setBool(FreeRDP_SupportGraphicsPipeline, useGfxBackend ? TRUE : FALSE);
+    setBool(FreeRDP_SurfaceCommandsEnabled, gfxSurfaceCommandsEnabled ? TRUE : FALSE);
+    setBool(FreeRDP_GfxProgressive, gfxProgressive ? TRUE : FALSE);
+    setBool(FreeRDP_GfxProgressiveV2, gfxProgressiveV2 ? TRUE : FALSE);
+    setBool(FreeRDP_GfxPlanar, gfxPlanar ? TRUE : FALSE);
+    setBool(FreeRDP_GfxH264, gfxH264 ? TRUE : FALSE);
+    setBool(FreeRDP_GfxAVC444, gfxAvc444 ? TRUE : FALSE);
+    setBool(FreeRDP_GfxAVC444v2, gfxAvc444V2 ? TRUE : FALSE);
 
   // Experience flags
   setBool(FreeRDP_DisableWallpaper, perf.disableWallpaper ? TRUE : FALSE);

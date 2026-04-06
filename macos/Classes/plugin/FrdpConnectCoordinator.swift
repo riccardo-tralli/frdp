@@ -74,6 +74,7 @@ final class FrdpConnectCoordinator {
           domain: request.domain,
           ignoreCertificate: request.ignoreCertificate,
           performanceProfile: request.profile,
+          renderingBackend: request.renderingBackend,
           customPerformanceConfig: customConfig
         )
 
@@ -126,6 +127,13 @@ final class FrdpConnectCoordinator {
     config.disableThemes           = request.customDisableThemes           ?? true
     config.allowDesktopComposition = request.customAllowDesktopComposition ?? false
     config.allowFontSmoothing      = request.customAllowFontSmoothing      ?? false
+    config.gfxSurfaceCommandsEnabled = request.customGfxSurfaceCommandsEnabled ?? false
+    config.gfxProgressive            = request.customGfxProgressive            ?? false
+    config.gfxProgressiveV2          = request.customGfxProgressiveV2          ?? false
+    config.gfxPlanar                 = request.customGfxPlanar                 ?? false
+    config.gfxH264                   = request.customGfxH264                   ?? false
+    config.gfxAvc444                 = request.customGfxAvc444                 ?? false
+    config.gfxAvc444V2               = request.customGfxAvc444V2               ?? false
     return config
   }
 }

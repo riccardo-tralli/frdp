@@ -37,6 +37,7 @@ class _HomePageState extends State<HomePage> {
         connectionType: FrdpConnectionType.lan,
         allowFontSmoothing: true,
         disableWallpaper: false,
+        gfxH264: true,
       );
 
   @override

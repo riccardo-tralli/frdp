@@ -20,6 +20,13 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
 @property(nonatomic) BOOL disableThemes;
 @property(nonatomic) BOOL allowDesktopComposition;
 @property(nonatomic) BOOL allowFontSmoothing;
+@property(nonatomic) BOOL gfxSurfaceCommandsEnabled;
+@property(nonatomic) BOOL gfxProgressive;
+@property(nonatomic) BOOL gfxProgressiveV2;
+@property(nonatomic) BOOL gfxPlanar;
+@property(nonatomic) BOOL gfxH264;
+@property(nonatomic) BOOL gfxAvc444;
+@property(nonatomic) BOOL gfxAvc444V2;
 @end
 
 @interface FrdpRdpEngineAdapter : NSObject
@@ -37,6 +44,7 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
                  domain:(nullable NSString *)domain
       ignoreCertificate:(BOOL)ignoreCertificate
      performanceProfile:(NSString *)performanceProfile
+              renderingBackend:(NSString *)renderingBackend
   customPerformanceConfig:(nullable FrdpCustomProfileConfig *)customConfig
                   error:(NSError **)error;
 

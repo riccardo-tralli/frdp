@@ -17,6 +17,7 @@ const String kUsernameArg = "username";
 const String kPasswordArg = "password";
 const String kDomainArg = "domain";
 const String kIgnoreCertificateArg = "ignoreCertificate";
+const String kRenderingBackendArg = "renderingBackend";
 const String kPerformanceProfileArg = "performanceProfile";
 const String kConnectTimeoutMsArg = "connectTimeoutMs";
 const String kXArg = "x";
@@ -32,9 +33,15 @@ const String kCustomDisableWallpaperArg = "customDisableWallpaper";
 const String kCustomDisableFullWindowDragArg = "customDisableFullWindowDrag";
 const String kCustomDisableMenuAnimationsArg = "customDisableMenuAnimations";
 const String kCustomDisableThemesArg = "customDisableThemes";
-const String kCustomAllowDesktopCompositionArg =
-    "customAllowDesktopComposition";
+const String kCustomAllowDesktopCompositionArg = "customAllowDesktopComposition";
 const String kCustomAllowFontSmoothingArg = "customAllowFontSmoothing";
+const String kCustomGfxSurfaceCommandsEnabledArg = "customGfxSurfaceCommandsEnabled";
+const String kCustomGfxProgressiveArg = "customGfxProgressive";
+const String kCustomGfxProgressiveV2Arg = "customGfxProgressiveV2";
+const String kCustomGfxPlanarArg = "customGfxPlanar";
+const String kCustomGfxH264Arg = "customGfxH264";
+const String kCustomGfxAvc444Arg = "customGfxAvc444";
+const String kCustomGfxAvc444V2Arg = "customGfxAvc444V2";
 
 const String kDisconnectedState = "disconnected";
 const String kConnectingState = "connecting";
