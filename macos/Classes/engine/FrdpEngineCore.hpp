@@ -13,6 +13,10 @@
 #if __has_include(<freerdp/freerdp.h>)
 #define FRDP_HAS_FREERDP 1
 #include <freerdp/client.h>
+#include <freerdp/client/cmdline.h>
+#include <freerdp/client/channels.h>
+#include <freerdp/addin.h>
+#include <freerdp/channels/channels.h>
 #include <freerdp/freerdp.h>
 #include <freerdp/gdi/gdi.h>
 #include <freerdp/gdi/gfx.h>

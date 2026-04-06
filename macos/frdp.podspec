@@ -21,7 +21,7 @@ Pod::Spec.new do |s|
   end
 
   include_flags = "-I#{freerdp_prefix}/include/freerdp3 -I#{freerdp_prefix}/include/winpr3"
-  ld_flags = "-L#{freerdp_prefix}/lib -L#{freerdp_deps_prefix}/lib -Wl,-rpath,#{freerdp_prefix}/lib -Wl,-rpath,#{freerdp_deps_prefix}/lib -lfreerdp3 -lfreerdp-client3 -lwinpr3 -lssl -lcrypto -ljansson -framework Carbon"
+  ld_flags = "-L#{freerdp_prefix}/lib -L#{freerdp_deps_prefix}/lib -Wl,-rpath,#{freerdp_prefix}/lib -Wl,-rpath,#{freerdp_deps_prefix}/lib -Wl,-force_load,#{freerdp_prefix}/lib/libfreerdp-client3.a -lfreerdp3 -lfreerdp-client3 -lwinpr3 -lssl -lcrypto -ljansson -lz -framework Carbon -framework AVFoundation -framework AudioToolbox -framework AudioUnit -framework CoreAudio"
 
   s.name             = 'frdp'
   s.version          = '0.0.1'

@@ -371,8 +371,25 @@ BOOL FrdpEngineCore::onPreConnect(freerdp* instance) {
                                    &FrdpEngineCore::onChannelConnected);
   PubSub_SubscribeChannelDisconnected(instance->context->pubSub,
                                       &FrdpEngineCore::onChannelDisconnected);
-  (void)freerdp_client_load_addins(instance->context->channels,
-                                   instance->context->settings);
+
+#if defined(WITH_CHANNELS)
+  // In embedded flows we bypass freerdp_client_context_new(), so we must
+  // register the static addin provider explicitly (same as client/common).
+  if (!freerdp_get_current_addin_provider()) {
+    if (freerdp_register_addin_provider(freerdp_channels_load_static_addin_entry, 0) !=
+        CHANNEL_RC_OK) {
+      return FALSE;
+    }
+  }
+#endif
+
+  // Required for virtual channels to be materialized
+  // from settings (e.g. FreeRDP_RedirectClipboard).
+  if (!freerdp_client_load_addins(instance->context->channels,
+                                  instance->context->settings)) {
+    return FALSE;
+  }
+
   return TRUE;
 }
 
@@ -390,9 +407,12 @@ BOOL FrdpEngineCore::onPostConnect(freerdp* instance) {
 void FrdpEngineCore::onChannelConnected(void* context, const ChannelConnectedEventArgs* e) {
   if (!context || !e || !e->pInterface) return;
   auto* rdpCtx = static_cast<rdpContext*>(context);
-  if (!rdpCtx->instance || !rdpCtx->gdi) return;
-  if (lookupInstanceOwner(rdpCtx->instance) == nullptr) return;
+  if (!rdpCtx->instance) return;
+  auto* core = lookupInstanceOwner(rdpCtx->instance);
+  if (!core) return;
+
   if (strcmp(e->name, RDPGFX_CHANNEL_NAME) == 0) {
+    if (!rdpCtx->gdi) return;
     gdi_graphics_pipeline_init(rdpCtx->gdi,
                                static_cast<RdpgfxClientContext*>(e->pInterface));
   }
@@ -401,9 +421,12 @@ void FrdpEngineCore::onChannelConnected(void* context, const ChannelConnectedEve
 void FrdpEngineCore::onChannelDisconnected(void* context, const ChannelDisconnectedEventArgs* e) {
   if (!context || !e || !e->pInterface) return;
   auto* rdpCtx = static_cast<rdpContext*>(context);
-  if (!rdpCtx->instance || !rdpCtx->gdi) return;
-  if (lookupInstanceOwner(rdpCtx->instance) == nullptr) return;
+  if (!rdpCtx->instance) return;
+  auto* core = lookupInstanceOwner(rdpCtx->instance);
+  if (!core) return;
+
   if (strcmp(e->name, RDPGFX_CHANNEL_NAME) == 0) {
+    if (!rdpCtx->gdi) return;
     gdi_graphics_pipeline_uninit(rdpCtx->gdi,
                                  static_cast<RdpgfxClientContext*>(e->pInterface));
   }
