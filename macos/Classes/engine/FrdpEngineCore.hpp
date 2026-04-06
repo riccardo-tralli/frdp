@@ -18,8 +18,6 @@
 #include <freerdp/gdi/gfx.h>
 #include <freerdp/client/rdpgfx.h>
 #include <freerdp/event.h>
-#include <freerdp/settings.h>
-#include <freerdp/settings_types.h>
 #include <winpr/synch.h>
 #else
 #define FRDP_HAS_FREERDP 0
