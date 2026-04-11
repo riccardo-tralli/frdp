@@ -59,6 +59,18 @@
     });
   });
 
+  _core->setClipboardCallback([weakSelf](const std::string& utf8Text) {
+    NSString* text = [NSString stringWithUTF8String:utf8Text.c_str()];
+    if (!text) return;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      FrdpRdpEngineAdapter* strongSelf = weakSelf;
+      if (!strongSelf) return;
+      if (strongSelf.remoteClipboardDidChange) {
+        strongSelf.remoteClipboardDidChange(text);
+      }
+    });
+  });
+
   return self;
 }
 
@@ -151,6 +163,15 @@
 
 - (void)sendMacKeyEventWithKeyCode:(NSInteger)keyCode isDown:(BOOL)isDown {
   _core->sendMacKey(static_cast<int>(keyCode), isDown == YES);
+}
+
+// MARK: - Clipboard forwarding ---------------------------------------------
+
+- (void)sendLocalClipboardText:(NSString*)text {
+  if (!text) return;
+  const char* utf8 = text.UTF8String;
+  if (!utf8) return;
+  _core->sendLocalClipboardText(std::string(utf8));
 }
 
 @end

@@ -92,4 +92,16 @@ abstract class FrdpPlatform extends PlatformInterface {
   }) {
     throw UnimplementedError("sendKeyEvent() has not been implemented");
   }
+
+  /// Explicitly sends [text] to the remote clipboard for [sessionId].
+  ///
+  /// The plugin already handles clipboard synchronization automatically for
+  /// normal copy operations; use this method only when you need programmatic
+  /// control (e.g. a "Copy to remote clipboard" button in the UI).
+  Future<void> sendClipboardText({
+    required String sessionId,
+    required String text,
+  }) {
+    throw UnimplementedError("sendClipboardText() has not been implemented");
+  }
 }

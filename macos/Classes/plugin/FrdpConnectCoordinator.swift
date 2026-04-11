@@ -1,10 +1,27 @@
 import Foundation
+import AppKit
 import FlutterMacOS
 
 final class FrdpConnectCoordinator {
   private let connectQueue = DispatchQueue(label: "it.riccardotralli.frdp.connect", qos: .userInitiated)
   private var pendingConnectAttempts: [String: FrdpConnectAttempt] = [:]
   private var pendingConnectCancels: [String: () -> Void] = [:]
+
+  /// Called on the main thread when the remote host places new clipboard text.
+  /// Arguments: (sessionId, text).  Set by FrdpPlugin on registration.
+  var onRemoteClipboard: ((String, String) -> Void)?
+
+  private static func startClipboardBridgeIfNeeded(for session: FrdpSession) {
+    session.clipboardMonitor.start { [weak session] text in
+      session?.engine.sendLocalClipboardText(text)
+    }
+
+    // Prime the remote clipboard with current local text right after connect,
+    // so paste on the remote host works even before the next copy action.
+    if let existing = NSPasteboard.general.string(forType: .string), !existing.isEmpty {
+      session.engine.sendLocalClipboardText(existing)
+    }
+  }
 
   func connect(
     request: FrdpConnectRequest,
@@ -21,6 +38,11 @@ final class FrdpConnectCoordinator {
     session.engine.connectionStateDidChange = { [weak session] connected in
       guard let session else { return }
       session.state = connected ? FrdpChannel.State.connected : FrdpChannel.State.disconnected
+      if connected {
+        FrdpConnectCoordinator.startClipboardBridgeIfNeeded(for: session)
+      } else {
+        session.clipboardMonitor.stop()
+      }
     }
 
     session.state = FrdpChannel.State.connecting
@@ -90,6 +112,18 @@ final class FrdpConnectCoordinator {
           self.pendingConnectCancels.removeValue(forKey: attemptId)
           session.state = FrdpChannel.State.connected
           sessionStore.addSession(session)
+
+          // Wire remote clipboard: RDP → NSPasteboard + Flutter event.
+          let remoteClipboardCallback = self.onRemoteClipboard
+          let sessionId = session.sessionId
+          session.engine.remoteClipboardDidChange = { [weak session] text in
+            guard let session else { return }
+            session.clipboardMonitor.suppressNextChange(matching: text)
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+            remoteClipboardCallback?(sessionId, text)
+          }
+
           result([FrdpChannel.Arg.sessionId: session.sessionId, "state": session.state])
         }
       } catch {

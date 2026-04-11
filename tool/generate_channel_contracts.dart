@@ -24,6 +24,7 @@ String emitSwift(Map<String, dynamic> schema) {
   final channelName = schema['channelName'].toString();
   final methods = stringMap(schema, 'methods');
   final args = stringMap(schema, 'args');
+  final events = stringMap(schema, 'events');
   final states = stringMap(schema, 'states');
   final viewTypes = stringMap(schema, 'viewTypes');
 
@@ -50,6 +51,13 @@ String emitSwift(Map<String, dynamic> schema) {
   b.writeln('  }');
   b.writeln();
 
+  b.writeln('  enum Event {');
+  for (final e in events.entries) {
+    b.writeln('    static let ${e.key} = "${e.value}"');
+  }
+  b.writeln('  }');
+  b.writeln();
+
   b.writeln('  enum State {');
   for (final e in states.entries) {
     b.writeln('    static let ${e.key} = "${e.value}"');
@@ -71,6 +79,7 @@ String emitDart(Map<String, dynamic> schema) {
   final channelName = schema['channelName'].toString();
   final methods = stringMap(schema, 'methods');
   final args = stringMap(schema, 'args');
+  final events = stringMap(schema, 'events');
   final states = stringMap(schema, 'states');
 
   final b = StringBuffer();
@@ -88,6 +97,11 @@ String emitDart(Map<String, dynamic> schema) {
 
   for (final e in args.entries) {
     b.writeln('const String k${capitalize(e.key)}Arg = "${e.value}";');
+  }
+  b.writeln();
+
+  for (final e in events.entries) {
+    b.writeln('const String k${capitalize(e.key)}Event = "${e.value}";');
   }
   b.writeln();
 

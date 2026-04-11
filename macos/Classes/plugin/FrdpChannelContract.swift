@@ -10,6 +10,7 @@ enum FrdpChannel {
     static let getConnectionState = "getConnectionState"
     static let sendPointerEvent = "sendPointerEvent"
     static let sendKeyEvent = "sendKeyEvent"
+    static let sendClipboardText = "sendClipboardText"
   }
 
   enum Arg {
@@ -46,6 +47,11 @@ enum FrdpChannel {
     static let customGfxH264 = "customGfxH264"
     static let customGfxAvc444 = "customGfxAvc444"
     static let customGfxAvc444V2 = "customGfxAvc444V2"
+    static let clipboardText = "clipboardText"
+  }
+
+  enum Event {
+    static let clipboardEvents = "frdp/clipboard/events"
   }
 
   enum State {

@@ -6,7 +6,8 @@
     "disconnect": "disconnect",
     "getConnectionState": "getConnectionState",
     "sendPointerEvent": "sendPointerEvent",
-    "sendKeyEvent": "sendKeyEvent"
+    "sendKeyEvent": "sendKeyEvent",
+    "sendClipboardText": "sendClipboardText"
   },
   "args": {
     "sessionId": "sessionId",
@@ -41,7 +42,11 @@
     "customGfxPlanar": "customGfxPlanar",
     "customGfxH264": "customGfxH264",
     "customGfxAvc444": "customGfxAvc444",
-    "customGfxAvc444V2": "customGfxAvc444V2"
+    "customGfxAvc444V2": "customGfxAvc444V2",
+    "clipboardText": "clipboardText"
+  },
+  "events": {
+    "clipboardEvents": "frdp/clipboard/events"
   },
   "states": {
     "disconnected": "disconnected",

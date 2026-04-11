@@ -1,9 +1,33 @@
 import Cocoa
 import FlutterMacOS
 
+// ---------------------------------------------------------------------------
+// FrdpClipboardStreamHandler
+// ---------------------------------------------------------------------------
+
+private final class FrdpClipboardStreamHandler: NSObject, FlutterStreamHandler {
+  var sink: FlutterEventSink?
+
+  func onListen(withArguments arguments: Any?,
+                eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+    sink = events
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    sink = nil
+    return nil
+  }
+}
+
+// ---------------------------------------------------------------------------
+// FrdpPlugin
+// ---------------------------------------------------------------------------
+
 public class FrdpPlugin: NSObject, FlutterPlugin {
   private let sessionStore = FrdpSessionStore()
   private let connectCoordinator = FrdpConnectCoordinator()
+  private let clipboardStreamHandler = FrdpClipboardStreamHandler()
 
   // MARK: - Registration
 
@@ -18,6 +42,23 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
       FrdpPlatformViewFactory(sessionStore: instance.sessionStore),
       withId: FrdpChannel.ViewType.rdpView
     )
+
+    // Clipboard event channel: native → Dart.
+    let clipboardChannel = FlutterEventChannel(
+      name: FrdpChannel.Event.clipboardEvents,
+      binaryMessenger: registrar.messenger
+    )
+    clipboardChannel.setStreamHandler(instance.clipboardStreamHandler)
+
+    // Forward remote clipboard events to Flutter.
+    instance.connectCoordinator.onRemoteClipboard = { [weak instance] sessionId, text in
+      DispatchQueue.main.async {
+        instance?.clipboardStreamHandler.sink?([
+          FrdpChannel.Arg.sessionId: sessionId,
+          FrdpChannel.Arg.clipboardText: text
+        ])
+      }
+    }
   }
 
   // MARK: - Method call dispatch
@@ -36,6 +77,8 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
       handleSendPointerEvent(call: call, result: result)
     case FrdpChannel.Method.sendKeyEvent:
       handleSendKeyEvent(call: call, result: result)
+    case FrdpChannel.Method.sendClipboardText:
+      handleSendClipboardText(call: call, result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -108,6 +151,20 @@ public class FrdpPlugin: NSObject, FlutterPlugin {
       return
     }
     session.engine.sendKeyEvent(withKeyCode: keyCode, isDown: isDown)
+    result(nil)
+  }
+
+  private func handleSendClipboardText(call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard
+      let args      = call.arguments as? [String: Any],
+      let sessionId = args[FrdpChannel.Arg.sessionId]     as? String,
+      let text      = args[FrdpChannel.Arg.clipboardText] as? String,
+      let session   = sessionStore.getSession(id: sessionId)
+    else {
+      result(invalidArgumentsError("Invalid clipboard text payload or session not found."))
+      return
+    }
+    session.engine.sendLocalClipboardText(text)
     result(nil)
   }
 

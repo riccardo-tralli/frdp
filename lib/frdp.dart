@@ -1,5 +1,6 @@
 export "widgets/frdp_view.dart";
 export "src/frdp_api.dart";
+export "src/utilities/frdp_clipboard.dart";
 export "src/models/frdp_connection_config.dart";
 export "src/models/frdp_connection_state.dart";
 export "src/models/frdp_connection_type.dart";
@@ -14,7 +15,10 @@ export "src/models/frdp_session.dart";
   ! Use with caution and be prepared to update your code when upgrading to new versions.
 
   Things to do:
-  TODO: add clipboard support
+  TODO: add sound support
+  TODO: add usb redirection support
+  TODO: add printer redirection support
+  TODO: add smart card redirection support
   TODO: improve error handling and reporting
   TODO: add Windows support
   TODO: add Linux support

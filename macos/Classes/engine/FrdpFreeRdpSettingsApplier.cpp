@@ -6,6 +6,7 @@
 
 #if FRDP_HAS_FREERDP_SETTINGS
 #include <freerdp/settings_types.h>
+#include <freerdp/channels/cliprdr.h>
 
 namespace {
 
@@ -86,6 +87,10 @@ bool FrdpApplyFreeRdpSettings(rdpSettings* settings, const FrdpFreeRdpConnectCon
   setBool(FreeRDP_MouseMotion, TRUE);
   setBool(FreeRDP_HasExtendedMouseEvent, TRUE);
   setBool(FreeRDP_HasHorizontalWheel, TRUE);
+
+  // Clipboard redirect (bidirectional Mac ↔ RDP).
+  setBool(FreeRDP_RedirectClipboard, TRUE);
+  setU32(FreeRDP_ClipboardFeatureMask, CLIPRDR_FLAG_DEFAULT_MASK);
 
     const bool useGfxBackend = IsGfxBackend(config.renderingBackend);
     const bool gfxSurfaceCommandsEnabled =

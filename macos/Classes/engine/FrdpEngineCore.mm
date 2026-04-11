@@ -1,6 +1,7 @@
 #include "FrdpEngineCore.hpp"
 #include "FrdpFreeRdpSettingsApplier.hpp"
 #include "FrdpInputMapper.hpp"
+#include "../clipboard/FrdpClipboardManager.hpp"
 
 #include <algorithm>
 #include <array>
@@ -89,11 +90,22 @@ bool FrdpEngineCore::connect(const FrdpFreeRdpConnectConfig& config,
   lastPointerY_ = 0;
 
 #if FRDP_HAS_FREERDP
+  clipboardManager_ = std::make_unique<FrdpClipboardManager>();
+  clipboardManager_->setTextReceivedCallback([this](const std::string& utf8Text) {
+    ClipboardCallback cb;
+    {
+      std::lock_guard<std::mutex> lock(clipboardCallbackMutex_);
+      cb = clipboardCallback_;
+    }
+    if (cb) cb(utf8Text);
+  });
+
   instance_.reset(freerdp_new());
   if (!instance_) { errorMessage = "Unable to allocate FreeRDP instance."; return false; }
 
   instance_->PreConnect = &FrdpEngineCore::onPreConnect;
   instance_->PostConnect = &FrdpEngineCore::onPostConnect;
+  instance_->LoadChannels = &FrdpEngineCore::onLoadChannels;
 
   if (!freerdp_context_new(instance_.get())) {
     errorMessage = "Unable to allocate FreeRDP context.";
@@ -164,6 +176,9 @@ void FrdpEngineCore::disconnect() {
       freerdp_disconnect(instance_.get());
       unregisterInstanceOwner(instance_.get());
       instance_.reset();
+    }
+    if (clipboardManager_) {
+      clipboardManager_->uninitialize();
     }
 #endif
     connected_.store(false);
@@ -276,6 +291,18 @@ void FrdpEngineCore::sendMacKey(int keyCode, bool isDown) {
 #endif
 }
 
+// MARK: - Clipboard ---------------------------------------------------------
+
+void FrdpEngineCore::sendLocalClipboardText(const std::string& utf8Text) {
+#if FRDP_HAS_FREERDP
+  if (clipboardManager_) {
+    clipboardManager_->onLocalClipboardChanged(utf8Text);
+  }
+#else
+  (void)utf8Text;
+#endif
+}
+
 // MARK: - Worker loop -------------------------------------------------------
 
 void FrdpEngineCore::runLoop() {
@@ -367,30 +394,31 @@ std::mutex& FrdpEngineCore::instanceOwnerMutex() {
 
 BOOL FrdpEngineCore::onPreConnect(freerdp* instance) {
   if (!instance || !instance->context) return FALSE;
+  if (!instance->context->settings) return FALSE;
+
   PubSub_SubscribeChannelConnected(instance->context->pubSub,
                                    &FrdpEngineCore::onChannelConnected);
   PubSub_SubscribeChannelDisconnected(instance->context->pubSub,
                                       &FrdpEngineCore::onChannelDisconnected);
 
+  return TRUE;
+}
+
+BOOL FrdpEngineCore::onLoadChannels(freerdp* instance) {
+  if (!instance || !instance->context) return FALSE;
+  auto* settings = instance->context->settings;
+  auto* channels = instance->context->channels;
+  if (!settings || !channels) return FALSE;
+
 #if defined(WITH_CHANNELS)
   // In embedded flows we bypass freerdp_client_context_new(), so we must
   // register the static addin provider explicitly (same as client/common).
-  if (!freerdp_get_current_addin_provider()) {
-    if (freerdp_register_addin_provider(freerdp_channels_load_static_addin_entry, 0) !=
-        CHANNEL_RC_OK) {
-      return FALSE;
-    }
-  }
+  // This callback is invoked on the fresh channels object created by
+  // utils_reload_channels(), which is where addins must be loaded.
+  freerdp_register_addin_provider(freerdp_channels_load_static_addin_entry, 0);
 #endif
 
-  // Required for virtual channels to be materialized
-  // from settings (e.g. FreeRDP_RedirectClipboard).
-  if (!freerdp_client_load_addins(instance->context->channels,
-                                  instance->context->settings)) {
-    return FALSE;
-  }
-
-  return TRUE;
+  return freerdp_client_load_addins(channels, settings) ? TRUE : FALSE;
 }
 
 BOOL FrdpEngineCore::onPostConnect(freerdp* instance) {
@@ -401,34 +429,50 @@ BOOL FrdpEngineCore::onPostConnect(freerdp* instance) {
     instance->context->update->BeginPaint = &FrdpEngineCore::onBeginPaint;
     instance->context->update->EndPaint   = &FrdpEngineCore::onEndPaint;
   }
+
   return TRUE;
 }
 
 void FrdpEngineCore::onChannelConnected(void* context, const ChannelConnectedEventArgs* e) {
-  if (!context || !e || !e->pInterface) return;
+  if (!context || !e) return;
   auto* rdpCtx = static_cast<rdpContext*>(context);
   if (!rdpCtx->instance) return;
   auto* core = lookupInstanceOwner(rdpCtx->instance);
   if (!core) return;
 
   if (strcmp(e->name, RDPGFX_CHANNEL_NAME) == 0) {
-    if (!rdpCtx->gdi) return;
+    if (!e->pInterface || !rdpCtx->gdi) return;
     gdi_graphics_pipeline_init(rdpCtx->gdi,
                                static_cast<RdpgfxClientContext*>(e->pInterface));
+    return;
+  }
+
+  if (strcmp(e->name, CLIPRDR_SVC_CHANNEL_NAME) == 0) {
+    auto* cliprdrCtx = reinterpret_cast<CliprdrClientContext*>(e->pInterface);
+    if (!cliprdrCtx || !core->clipboardManager_) return;
+
+    core->clipboardManager_->initialize(cliprdrCtx);
   }
 }
 
 void FrdpEngineCore::onChannelDisconnected(void* context, const ChannelDisconnectedEventArgs* e) {
-  if (!context || !e || !e->pInterface) return;
+  if (!context || !e) return;
   auto* rdpCtx = static_cast<rdpContext*>(context);
   if (!rdpCtx->instance) return;
   auto* core = lookupInstanceOwner(rdpCtx->instance);
   if (!core) return;
 
   if (strcmp(e->name, RDPGFX_CHANNEL_NAME) == 0) {
-    if (!rdpCtx->gdi) return;
+    if (!e->pInterface || !rdpCtx->gdi) return;
     gdi_graphics_pipeline_uninit(rdpCtx->gdi,
                                  static_cast<RdpgfxClientContext*>(e->pInterface));
+    return;
+  }
+
+  if (strcmp(e->name, CLIPRDR_SVC_CHANNEL_NAME) == 0) {
+    if (core->clipboardManager_) {
+      core->clipboardManager_->uninitialize();
+    }
   }
 }
 

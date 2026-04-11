@@ -9,6 +9,7 @@
 #include <thread>
 #include <unordered_map>
 #include "FrdpFreeRdpSettingsApplier.hpp"
+#include "../clipboard/FrdpClipboardManager.hpp"
 
 #if __has_include(<freerdp/freerdp.h>)
 #define FRDP_HAS_FREERDP 1
@@ -43,6 +44,7 @@ class FrdpEngineCore {
   // outlive the call.
   using FrameCallback = std::function<void(const uint8_t*, int, int, int)>;
   using ConnectionStateCallback = std::function<void(bool)>;
+  using ClipboardCallback = std::function<void(const std::string&)>;
 
   FrdpEngineCore() = default;
   ~FrdpEngineCore() { disconnect(); }
@@ -74,6 +76,18 @@ class FrdpEngineCore {
     std::lock_guard<std::mutex> lock(connectionCallbackMutex_);
     connectionStateCallback_ = std::move(callback);
   }
+
+  void setClipboardCallback(ClipboardCallback callback) {
+    std::lock_guard<std::mutex> lock(clipboardCallbackMutex_);
+    clipboardCallback_ = std::move(callback);
+  }
+
+  // -------------------------------------------------------------------------
+  // Clipboard
+  // -------------------------------------------------------------------------
+
+  // Called from the main thread when the local (macOS) clipboard changes.
+  void sendLocalClipboardText(const std::string& utf8Text);
 
   // -------------------------------------------------------------------------
   // Input
@@ -118,6 +132,7 @@ class FrdpEngineCore {
   // FreeRDP callbacks
   static BOOL onPreConnect(freerdp* instance);
   static BOOL onPostConnect(freerdp* instance);
+  static BOOL onLoadChannels(freerdp* instance);
   static BOOL onBeginPaint(rdpContext* context);
   static BOOL onEndPaint(rdpContext* context);
 
@@ -132,6 +147,7 @@ class FrdpEngineCore {
   };
 
   std::unique_ptr<freerdp, FreeRdpDeleter> instance_;
+  std::unique_ptr<FrdpClipboardManager>    clipboardManager_;
 #endif
 
   // -------------------------------------------------------------------------
@@ -146,6 +162,8 @@ class FrdpEngineCore {
   FrameCallback          frameCallback_;
   std::mutex             connectionCallbackMutex_;
   ConnectionStateCallback connectionStateCallback_;
+  std::mutex             clipboardCallbackMutex_;
+  ClipboardCallback      clipboardCallback_;
   int                    lastButtons_{0};
   uint16_t               lastPointerX_{0};
   uint16_t               lastPointerY_{0};

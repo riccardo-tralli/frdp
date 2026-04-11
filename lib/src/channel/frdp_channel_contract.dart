@@ -8,6 +8,7 @@ const String kDisconnectMethod = "disconnect";
 const String kGetConnectionStateMethod = "getConnectionState";
 const String kSendPointerEventMethod = "sendPointerEvent";
 const String kSendKeyEventMethod = "sendKeyEvent";
+const String kSendClipboardTextMethod = "sendClipboardText";
 
 const String kSessionIdArg = "sessionId";
 const String kStateArg = "state";
@@ -42,6 +43,9 @@ const String kCustomGfxPlanarArg = "customGfxPlanar";
 const String kCustomGfxH264Arg = "customGfxH264";
 const String kCustomGfxAvc444Arg = "customGfxAvc444";
 const String kCustomGfxAvc444V2Arg = "customGfxAvc444V2";
+const String kClipboardTextArg = "clipboardText";
+
+const String kClipboardEventsEvent = "frdp/clipboard/events";
 
 const String kDisconnectedState = "disconnected";
 const String kConnectingState = "connecting";

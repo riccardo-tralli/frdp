@@ -80,4 +80,15 @@ class MethodChannelFrdp extends FrdpPlatform {
       },
     );
   }
+
+  @override
+  Future<void> sendClipboardText({
+    required String sessionId,
+    required String text,
+  }) {
+    return methodChannel.invokeMethod<void>(
+      kSendClipboardTextMethod,
+      <String, dynamic>{kSessionIdArg: sessionId, kClipboardTextArg: text},
+    );
+  }
 }

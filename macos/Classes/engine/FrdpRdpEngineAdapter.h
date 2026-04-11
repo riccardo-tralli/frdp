@@ -34,6 +34,10 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
 @property(nonatomic, readonly) NSView *renderView;
 @property(nonatomic, readonly, getter=isConnected) BOOL connected;
 @property(nonatomic, copy, nullable) FrdpConnectionStateDidChangeBlock connectionStateDidChange;
+/// Called on the main thread whenever the remote (RDP) host places new text
+/// on its clipboard.  Use this to write NSPasteboard and optionally notify
+/// the Flutter layer.
+@property(nonatomic, copy, nullable) void (^remoteClipboardDidChange)(NSString *text);
 
 - (instancetype)init;
 
@@ -63,6 +67,10 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
 - (void)sendKeyEventWithKeyCode:(NSInteger)keyCode isDown:(BOOL)isDown;
 
 - (void)sendMacKeyEventWithKeyCode:(NSInteger)keyCode isDown:(BOOL)isDown;
+
+/// Forward local clipboard text to the remote (RDP) host.
+/// Safe to call from any thread; internally dispatched as needed.
+- (void)sendLocalClipboardText:(NSString *)text;
 
 @end
 
