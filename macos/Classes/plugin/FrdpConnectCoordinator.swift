@@ -96,6 +96,7 @@ final class FrdpConnectCoordinator {
           domain: request.domain,
           ignoreCertificate: request.ignoreCertificate,
           enableClipboard: request.enableClipboard,
+          disableClipboardPerformanceFallback: request.disableClipboardPerformanceFallback,
           performanceProfile: request.profile,
           renderingBackend: request.renderingBackend,
           customPerformanceConfig: customConfig

@@ -83,6 +83,7 @@
                  domain:(nullable NSString*)domain
       ignoreCertificate:(BOOL)ignoreCertificate
   enableClipboard:(BOOL)enableClipboard
+  disableClipboardPerformanceFallback:(BOOL)disableClipboardPerformanceFallback
      performanceProfile:(NSString*)performanceProfile
               renderingBackend:(NSString*)renderingBackend
   customPerformanceConfig:(nullable FrdpCustomProfileConfig*)customConfig
@@ -95,6 +96,7 @@
   config.domain              = domain ? domain.UTF8String : "";
   config.ignoreCertificate   = ignoreCertificate == YES;
   config.enableClipboard     = enableClipboard == YES;
+  config.disableClipboardPerformanceFallback = disableClipboardPerformanceFallback == YES;
   config.performanceProfile  = performanceProfile.UTF8String;
   config.renderingBackend    = renderingBackend.UTF8String;
 

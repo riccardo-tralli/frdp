@@ -19,6 +19,7 @@ const String kPasswordArg = "password";
 const String kDomainArg = "domain";
 const String kIgnoreCertificateArg = "ignoreCertificate";
 const String kEnableClipboardArg = "enableClipboard";
+const String kDisableClipboardPerformanceFallbackArg = "disableClipboardPerformanceFallback";
 const String kRenderingBackendArg = "renderingBackend";
 const String kPerformanceProfileArg = "performanceProfile";
 const String kConnectTimeoutMsArg = "connectTimeoutMs";

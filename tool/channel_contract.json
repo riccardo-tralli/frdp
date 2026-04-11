@@ -19,6 +19,7 @@
     "domain": "domain",
     "ignoreCertificate": "ignoreCertificate",
     "enableClipboard": "enableClipboard",
+    "disableClipboardPerformanceFallback": "disableClipboardPerformanceFallback",
     "renderingBackend": "renderingBackend",
     "performanceProfile": "performanceProfile",
     "connectTimeoutMs": "connectTimeoutMs",

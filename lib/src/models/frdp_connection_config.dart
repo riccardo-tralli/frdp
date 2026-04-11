@@ -44,7 +44,19 @@ class FrdpConnectionConfig {
   final int? connectTimeoutMs;
 
   /// Enables clipboard redirection for this session (default is true).
+  ///
+  /// When enabled, presets apply a [FrdpConnectionType.lan] fallback by default
+  /// to keep frame pacing stable.
+  /// This can be disabled with [disableClipboardPerformanceFallback] if you want
+  /// to keep the profile's original connection type even with clipboard enabled.
   final bool enableClipboard;
+
+  /// Disables the LAN fallback that is normally applied when clipboard is
+  /// enabled via [enableClipboard].
+  ///
+  /// Set this to `true` if you explicitly want to keep the profile's original
+  /// connection type even with clipboard enabled.
+  final bool disableClipboardPerformanceFallback;
 
   /// Configuration for establishing a remote desktop connection.
   ///
@@ -62,6 +74,7 @@ class FrdpConnectionConfig {
     this.customPerformanceProfile,
     this.connectTimeoutMs,
     this.enableClipboard = true,
+    this.disableClipboardPerformanceFallback = false,
   });
 
   /// Converts the [FrdpConnectionConfig] instance to a [Map] for use in
@@ -119,6 +132,8 @@ class FrdpConnectionConfig {
         ...customPerformanceProfile!.toMap(),
       if (connectTimeoutMs != null) kConnectTimeoutMsArg: connectTimeoutMs,
       kEnableClipboardArg: enableClipboard,
+      kDisableClipboardPerformanceFallbackArg:
+          disableClipboardPerformanceFallback,
     };
   }
 }

@@ -60,7 +60,16 @@ bool FrdpApplyFreeRdpSettings(rdpSettings* settings, const FrdpFreeRdpConnectCon
   setU32(FreeRDP_ColorDepth, config.hasCustomPerformanceProfile
              ? config.customPerformanceProfile.colorDepth
              : 32);
-  setU32(FreeRDP_ConnectionType, perf.connectionType);
+  uint32_t effectiveConnectionType = perf.connectionType;
+#if defined(CONNECTION_TYPE_LAN)
+  if (config.enableClipboard && !config.disableClipboardPerformanceFallback) {
+    // Clipboard traffic can starve rendering when the server applies
+    // conservative bandwidth policies (modem/broadband profiles).
+    // Force LAN policy to keep frame pacing stable while clipboard is active.
+    effectiveConnectionType = CONNECTION_TYPE_LAN;
+  }
+#endif
+  setU32(FreeRDP_ConnectionType, effectiveConnectionType);
   setU16(FreeRDP_SupportedColorDepths,
          static_cast<UINT16>(RNS_UD_32BPP_SUPPORT | RNS_UD_24BPP_SUPPORT));
 
