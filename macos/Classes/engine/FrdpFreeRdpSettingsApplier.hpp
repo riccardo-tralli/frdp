@@ -42,6 +42,7 @@ struct FrdpFreeRdpConnectConfig {
   bool        ignoreCertificate;
   std::string performanceProfile;         // used only when !hasCustomPerformanceProfile
   std::string renderingBackend = "gdi";
+  bool        enableClipboard = true;
   bool        hasCustomPerformanceProfile = false;
   FrdpCustomPerformanceConfig customPerformanceProfile;
 };

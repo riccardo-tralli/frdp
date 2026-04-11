@@ -12,6 +12,8 @@ Widget _homePageBody({
   required Function() onIgnoreCertificateChanged,
   required FrdpPerformanceProfile performanceProfile,
   required Function(FrdpPerformanceProfile) onPerformanceProfileChanged,
+  required bool enableClipboard,
+  required Function() onEnableClipboardChanged,
   required Function() onButtonPressed,
 }) => Row(
   children: [
@@ -30,6 +32,8 @@ Widget _homePageBody({
         performanceProfile: performanceProfile,
         onPerformanceProfileChanged: (value) =>
             onPerformanceProfileChanged(value),
+        enableClipboard: enableClipboard,
+        onEnableClipboardChanged: () => onEnableClipboardChanged(),
         onButtonPressed: () => onButtonPressed(),
       ),
     ),

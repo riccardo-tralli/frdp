@@ -47,6 +47,7 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
                password:(NSString *)password
                  domain:(nullable NSString *)domain
       ignoreCertificate:(BOOL)ignoreCertificate
+              enableClipboard:(BOOL)enableClipboard
      performanceProfile:(NSString *)performanceProfile
               renderingBackend:(NSString *)renderingBackend
   customPerformanceConfig:(nullable FrdpCustomProfileConfig *)customConfig

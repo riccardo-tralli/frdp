@@ -22,6 +22,7 @@ enum FrdpChannel {
     static let password = "password"
     static let domain = "domain"
     static let ignoreCertificate = "ignoreCertificate"
+    static let enableClipboard = "enableClipboard"
     static let renderingBackend = "renderingBackend"
     static let performanceProfile = "performanceProfile"
     static let connectTimeoutMs = "connectTimeoutMs"

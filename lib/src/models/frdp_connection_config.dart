@@ -43,6 +43,9 @@ class FrdpConnectionConfig {
   /// The connection timeout in milliseconds (optional).
   final int? connectTimeoutMs;
 
+  /// Enables clipboard redirection for this session (default is true).
+  final bool enableClipboard;
+
   /// Configuration for establishing a remote desktop connection.
   ///
   /// The [host], [username], and [password] fields are required, while the
@@ -58,6 +61,7 @@ class FrdpConnectionConfig {
     this.performanceProfile = FrdpPerformanceProfile.medium,
     this.customPerformanceProfile,
     this.connectTimeoutMs,
+    this.enableClipboard = true,
   });
 
   /// Converts the [FrdpConnectionConfig] instance to a [Map] for use in
@@ -114,6 +118,7 @@ class FrdpConnectionConfig {
       if (performanceProfile == FrdpPerformanceProfile.custom)
         ...customPerformanceProfile!.toMap(),
       if (connectTimeoutMs != null) kConnectTimeoutMsArg: connectTimeoutMs,
+      kEnableClipboardArg: enableClipboard,
     };
   }
 }

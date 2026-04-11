@@ -12,6 +12,8 @@ Widget _sideMenu({
   required Function() onIgnoreCertificateChanged,
   required FrdpPerformanceProfile performanceProfile,
   required Function(FrdpPerformanceProfile) onPerformanceProfileChanged,
+  required bool enableClipboard,
+  required Function() onEnableClipboardChanged,
   required Function() onButtonPressed,
 }) => Padding(
   padding: const EdgeInsets.only(left: Spaces.medium, right: Spaces.small),
@@ -29,6 +31,8 @@ Widget _sideMenu({
         onIgnoreCertificateChanged,
         performanceProfile,
         onPerformanceProfileChanged,
+        enableClipboard,
+        onEnableClipboardChanged,
         state,
       ),
       SizedBox(height: Spaces.extraLarge),
@@ -76,6 +80,8 @@ Widget _form(
   Function() onIgnoreCertificateChanged,
   FrdpPerformanceProfile performanceProfile,
   Function(FrdpPerformanceProfile) onPerformanceProfileChanged,
+  bool enableClipboard,
+  Function() onEnableClipboardChanged,
   RdpSessionState state,
 ) => FocusTraversalGroup(
   policy: OrderedTraversalPolicy(),
@@ -152,6 +158,13 @@ Widget _form(
           ),
         ],
         onChanged: (value) => onPerformanceProfileChanged(value!),
+      ),
+      SwitchListTile(
+        value: enableClipboard,
+        onChanged: (_) => state is! RdpSessionConnectedState
+            ? onEnableClipboardChanged()
+            : null,
+        title: const Text("Enable Clipboard"),
       ),
     ],
   ),

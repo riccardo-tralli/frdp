@@ -18,6 +18,7 @@
     "password": "password",
     "domain": "domain",
     "ignoreCertificate": "ignoreCertificate",
+    "enableClipboard": "enableClipboard",
     "renderingBackend": "renderingBackend",
     "performanceProfile": "performanceProfile",
     "connectTimeoutMs": "connectTimeoutMs",

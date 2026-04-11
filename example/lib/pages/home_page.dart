@@ -39,6 +39,7 @@ class _HomePageState extends State<HomePage> {
         disableWallpaper: false,
         gfxH264: true,
       );
+  bool _enableClipboard = true;
 
   @override
   void dispose() {
@@ -69,6 +70,9 @@ class _HomePageState extends State<HomePage> {
             performanceProfile: _performanceProfile,
             onPerformanceProfileChanged: (value) =>
                 setState(() => _performanceProfile = value),
+            enableClipboard: _enableClipboard,
+            onEnableClipboardChanged: () =>
+                setState(() => _enableClipboard = !_enableClipboard),
             onButtonPressed: () {
               if (state is RdpSessionConnectedState) {
                 context.read<RdpSessionBloc>().disconnect();
@@ -84,6 +88,7 @@ class _HomePageState extends State<HomePage> {
                   ignoreCertificate: _ignoreCertificate,
                   performanceProfile: _performanceProfile,
                   customPerformanceProfile: _customPerformanceProfile,
+                  enableClipboard: _enableClipboard,
                 );
               }
             },

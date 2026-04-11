@@ -11,13 +11,11 @@ final class FrdpConnectCoordinator {
   /// Arguments: (sessionId, text).  Set by FrdpPlugin on registration.
   var onRemoteClipboard: ((String, String) -> Void)?
 
-  private static func startClipboardBridgeIfNeeded(for session: FrdpSession) {
+  private static func startClipboardBridge(for session: FrdpSession) {
     session.clipboardMonitor.start { [weak session] text in
       session?.engine.sendLocalClipboardText(text)
     }
 
-    // Prime the remote clipboard with current local text right after connect,
-    // so paste on the remote host works even before the next copy action.
     if let existing = NSPasteboard.general.string(forType: .string), !existing.isEmpty {
       session.engine.sendLocalClipboardText(existing)
     }
@@ -39,7 +37,9 @@ final class FrdpConnectCoordinator {
       guard let session else { return }
       session.state = connected ? FrdpChannel.State.connected : FrdpChannel.State.disconnected
       if connected {
-        FrdpConnectCoordinator.startClipboardBridgeIfNeeded(for: session)
+        if request.enableClipboard {
+          FrdpConnectCoordinator.startClipboardBridge(for: session)
+        }
       } else {
         session.clipboardMonitor.stop()
       }
@@ -95,6 +95,7 @@ final class FrdpConnectCoordinator {
           password: request.password,
           domain: request.domain,
           ignoreCertificate: request.ignoreCertificate,
+          enableClipboard: request.enableClipboard,
           performanceProfile: request.profile,
           renderingBackend: request.renderingBackend,
           customPerformanceConfig: customConfig
@@ -116,12 +117,17 @@ final class FrdpConnectCoordinator {
           // Wire remote clipboard: RDP → NSPasteboard + Flutter event.
           let remoteClipboardCallback = self.onRemoteClipboard
           let sessionId = session.sessionId
-          session.engine.remoteClipboardDidChange = { [weak session] text in
-            guard let session else { return }
-            session.clipboardMonitor.suppressNextChange(matching: text)
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text, forType: .string)
-            remoteClipboardCallback?(sessionId, text)
+          if request.enableClipboard {
+            session.engine.remoteClipboardDidChange = { [weak session] text in
+              guard let session else { return }
+              session.clipboardMonitor.suppressNextChange(matching: text)
+              NSPasteboard.general.clearContents()
+              NSPasteboard.general.setString(text, forType: .string)
+              remoteClipboardCallback?(sessionId, text)
+            }
+          } else {
+            session.engine.remoteClipboardDidChange = nil
+            session.clipboardMonitor.stop()
           }
 
           result([FrdpChannel.Arg.sessionId: session.sessionId, "state": session.state])

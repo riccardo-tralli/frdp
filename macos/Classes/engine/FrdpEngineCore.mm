@@ -90,22 +90,27 @@ bool FrdpEngineCore::connect(const FrdpFreeRdpConnectConfig& config,
   lastPointerY_ = 0;
 
 #if FRDP_HAS_FREERDP
-  clipboardManager_ = std::make_unique<FrdpClipboardManager>();
-  clipboardManager_->setTextReceivedCallback([this](const std::string& utf8Text) {
-    ClipboardCallback cb;
-    {
-      std::lock_guard<std::mutex> lock(clipboardCallbackMutex_);
-      cb = clipboardCallback_;
-    }
-    if (cb) cb(utf8Text);
-  });
+  const bool clipboardEnabled = config.enableClipboard;
+  if (clipboardEnabled) {
+    clipboardManager_ = std::make_unique<FrdpClipboardManager>();
+    clipboardManager_->setTextReceivedCallback([this](const std::string& utf8Text) {
+      ClipboardCallback cb;
+      {
+        std::lock_guard<std::mutex> lock(clipboardCallbackMutex_);
+        cb = clipboardCallback_;
+      }
+      if (cb) cb(utf8Text);
+    });
+  } else {
+    clipboardManager_.reset();
+  }
 
   instance_.reset(freerdp_new());
   if (!instance_) { errorMessage = "Unable to allocate FreeRDP instance."; return false; }
 
   instance_->PreConnect = &FrdpEngineCore::onPreConnect;
   instance_->PostConnect = &FrdpEngineCore::onPostConnect;
-  instance_->LoadChannels = &FrdpEngineCore::onLoadChannels;
+  instance_->LoadChannels = clipboardEnabled ? &FrdpEngineCore::onLoadChannels : nullptr;
 
   if (!freerdp_context_new(instance_.get())) {
     errorMessage = "Unable to allocate FreeRDP context.";
@@ -400,6 +405,24 @@ BOOL FrdpEngineCore::onPreConnect(freerdp* instance) {
                                    &FrdpEngineCore::onChannelConnected);
   PubSub_SubscribeChannelDisconnected(instance->context->pubSub,
                                       &FrdpEngineCore::onChannelDisconnected);
+
+  const bool clipboardEnabled =
+      freerdp_settings_get_bool(instance->context->settings, FreeRDP_RedirectClipboard);
+
+  if (!clipboardEnabled) {
+#if defined(WITH_CHANNELS)
+    if (!freerdp_get_current_addin_provider()) {
+      if (freerdp_register_addin_provider(freerdp_channels_load_static_addin_entry, 0) !=
+          CHANNEL_RC_OK) {
+        return FALSE;
+      }
+    }
+#endif
+    if (!freerdp_client_load_addins(instance->context->channels,
+                                    instance->context->settings)) {
+      return FALSE;
+    }
+  }
 
   return TRUE;
 }

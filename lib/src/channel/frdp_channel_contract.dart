@@ -18,6 +18,7 @@ const String kUsernameArg = "username";
 const String kPasswordArg = "password";
 const String kDomainArg = "domain";
 const String kIgnoreCertificateArg = "ignoreCertificate";
+const String kEnableClipboardArg = "enableClipboard";
 const String kRenderingBackendArg = "renderingBackend";
 const String kPerformanceProfileArg = "performanceProfile";
 const String kConnectTimeoutMsArg = "connectTimeoutMs";

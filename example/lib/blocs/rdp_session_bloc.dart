@@ -37,6 +37,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
               : event.renderingBackend,
           performanceProfile: event.performanceProfile,
           customPerformanceProfile: event.customPerformanceProfile,
+          enableClipboard: event.enableClipboard,
         ),
       );
 
@@ -126,6 +127,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
     FrdpRenderingBackend renderingBackend = FrdpRenderingBackend.gdi,
     FrdpPerformanceProfile performanceProfile = FrdpPerformanceProfile.medium,
     FrdpCustomPerformanceProfile? customPerformanceProfile,
+    bool enableClipboard = true,
   }) => add(
     ConnectRdpSessionEvent(
       host: host,
@@ -137,6 +139,7 @@ class RdpSessionBloc extends Bloc<RdpSessionEvent, RdpSessionState> {
       renderingBackend: renderingBackend,
       performanceProfile: performanceProfile,
       customPerformanceProfile: customPerformanceProfile,
+      enableClipboard: enableClipboard,
     ),
   );
 

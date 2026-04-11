@@ -26,6 +26,7 @@ struct FrdpConnectRequest {
   let profile: String
   let renderingBackend: String
   let ignoreCertificate: Bool
+  let enableClipboard: Bool
   let timeoutMs: Int
 
   // Optional custom performance profile.  Present only when the caller
@@ -89,6 +90,7 @@ struct FrdpConnectRequest {
         profile: (args[FrdpChannel.Arg.performanceProfile] as? String) ?? defaultProfile,
         renderingBackend: (args[FrdpChannel.Arg.renderingBackend] as? String) ?? defaultRenderingBackend,
         ignoreCertificate: (args[FrdpChannel.Arg.ignoreCertificate] as? Bool) ?? false,
+        enableClipboard: (args[FrdpChannel.Arg.enableClipboard] as? Bool) ?? true,
         timeoutMs: clampedTimeout,
         customDesktopWidth: customDesktopWidth,
         customDesktopHeight: customDesktopHeight,

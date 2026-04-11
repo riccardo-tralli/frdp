@@ -14,6 +14,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
   final FrdpRenderingBackend renderingBackend;
   final FrdpPerformanceProfile performanceProfile;
   final FrdpCustomPerformanceProfile? customPerformanceProfile;
+  final bool enableClipboard;
 
   const ConnectRdpSessionEvent({
     required this.host,
@@ -25,6 +26,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
     this.renderingBackend = FrdpRenderingBackend.gdi,
     this.performanceProfile = FrdpPerformanceProfile.medium,
     this.customPerformanceProfile,
+    this.enableClipboard = false,
   });
 }
 
