@@ -14,6 +14,7 @@ A Flutter plugin for Remote Desktop Protocol (RDP) connections.
 - A Dart API to open and manage RDP sessions.
 - A native macOS platform view widget to render the remote desktop in Flutter.
 - Input forwarding for keyboard, mouse, and touchpad events.
+- Bidirectional clipboard support.
 - Support for GDI and GFX rendering backends.
 
 ![demo](docs/assets/demo.gif)
@@ -86,6 +87,8 @@ final session = await frdp.connect(
     password: "rdp-password",
     domain: "WORKGROUP", // optional
     ignoreCertificate: true, // optional, default false
+    enableClipboard: true, // optional, default true
+    disableClipboardPerformanceFallback: false, // optional, default false
     renderingBackend: FrdpRenderingBackend.gdi, // optional, default gdi
     performanceProfile: FrdpPerformanceProfile.medium, // optional, default medium
     connectTimeoutMs: 15000, // optional
@@ -182,6 +185,7 @@ Main exports:
 - `FrdpPerformanceProfile`: preset profile for connection quality/performance trade-offs
 - `FrdpCustomPerformanceProfile`: fine-grained FreeRDP display/performance settings
 - `FrdpConnectionType`: link-type hint used by custom profile
+- `FrdpClipboard`: utility for clipboard events and remote clipboard writes
 - `FrdpView`: RDP rendering widget
 
 ## Input forwarding
