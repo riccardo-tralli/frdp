@@ -99,7 +99,7 @@ class FrdpCustomPerformanceProfile {
   const FrdpCustomPerformanceProfile({
     required this.desktopWidth,
     required this.desktopHeight,
-    this.connectionType = FrdpConnectionType.broadbandLow,
+    this.connectionType = FrdpConnectionType.autoDetect,
     this.colorDepth = 32,
     this.disableWallpaper = true,
     this.disableFullWindowDrag = true,

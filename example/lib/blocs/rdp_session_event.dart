@@ -15,6 +15,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
   final FrdpPerformanceProfile performanceProfile;
   final FrdpCustomPerformanceProfile? customPerformanceProfile;
   final bool enableClipboard;
+  final bool disableClipboardPerformanceFallback;
 
   const ConnectRdpSessionEvent({
     required this.host,
@@ -27,6 +28,7 @@ final class ConnectRdpSessionEvent extends RdpSessionEvent {
     this.performanceProfile = FrdpPerformanceProfile.medium,
     this.customPerformanceProfile,
     this.enableClipboard = false,
+    this.disableClipboardPerformanceFallback = false,
   });
 }
 

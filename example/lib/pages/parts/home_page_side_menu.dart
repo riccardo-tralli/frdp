@@ -131,8 +131,8 @@ Widget _form(
       Divider(),
       SwitchListTile(
         value: ignoreCertificate,
-        onChanged: (_) => state is! RdpSessionConnectedState
-            ? onIgnoreCertificateChanged()
+        onChanged: state is! RdpSessionConnectedState
+            ? (_) => onIgnoreCertificateChanged()
             : null,
         title: const Text("Ignore SSL validation"),
       ),
@@ -157,14 +157,76 @@ Widget _form(
             child: Text("Custom"),
           ),
         ],
-        onChanged: (value) => onPerformanceProfileChanged(value!),
+        onChanged: state is! RdpSessionConnectedState
+            ? (value) => onPerformanceProfileChanged(value!)
+            : null,
       ),
       SwitchListTile(
         value: enableClipboard,
-        onChanged: (_) => state is! RdpSessionConnectedState
-            ? onEnableClipboardChanged()
+        onChanged: state is! RdpSessionConnectedState
+            ? (_) => onEnableClipboardChanged()
             : null,
         title: const Text("Enable Clipboard"),
+      ),
+      Divider(),
+      Row(
+        spacing: Spaces.medium,
+        children: [
+          Expanded(
+            flex: 3,
+            child: FilledButton.icon(
+              icon: Icon(Icons.copy),
+              label: Text("Send data to remote clipboard"),
+              onPressed: state is RdpSessionConnectedState && enableClipboard
+                  ? () => FrdpClipboard.sendToRemote(
+                      sessionId: state.id,
+                      text: "Hello from Flutter!",
+                    )
+                  : null,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: FilledButton.icon(
+              icon: Icon(Icons.keyboard),
+              label: Text("Ctrl+Alt+Del"),
+              onPressed: state is RdpSessionConnectedState
+                  ? () {
+                      Frdp().sendKeyEvent(
+                        sessionId: state.id,
+                        keyCode: PhysicalKeyboardKey.controlLeft.usbHidUsage,
+                        isDown: true,
+                      );
+                      Frdp().sendKeyEvent(
+                        sessionId: state.id,
+                        keyCode: PhysicalKeyboardKey.altLeft.usbHidUsage,
+                        isDown: true,
+                      );
+                      Frdp().sendKeyEvent(
+                        sessionId: state.id,
+                        keyCode: PhysicalKeyboardKey.delete.usbHidUsage,
+                        isDown: true,
+                      );
+                      Frdp().sendKeyEvent(
+                        sessionId: state.id,
+                        keyCode: PhysicalKeyboardKey.controlLeft.usbHidUsage,
+                        isDown: false,
+                      );
+                      Frdp().sendKeyEvent(
+                        sessionId: state.id,
+                        keyCode: PhysicalKeyboardKey.altLeft.usbHidUsage,
+                        isDown: false,
+                      );
+                      Frdp().sendKeyEvent(
+                        sessionId: state.id,
+                        keyCode: PhysicalKeyboardKey.delete.usbHidUsage,
+                        isDown: false,
+                      );
+                    }
+                  : null,
+            ),
+          ),
+        ],
       ),
     ],
   ),

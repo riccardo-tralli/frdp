@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 import "package:flutter_bloc/flutter_bloc.dart";
 import "package:frdp/frdp.dart";
 import "package:frdp_example/blocs/rdp_session_bloc.dart";
@@ -37,7 +38,6 @@ class _HomePageState extends State<HomePage> {
         connectionType: FrdpConnectionType.lan,
         allowFontSmoothing: true,
         disableWallpaper: false,
-        gfxH264: true,
       );
   bool _enableClipboard = true;
 
