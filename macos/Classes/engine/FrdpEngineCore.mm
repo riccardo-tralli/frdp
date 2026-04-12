@@ -392,10 +392,12 @@ void FrdpEngineCore::sendLocalClipboardText(const std::string& utf8Text) {
 // MARK: - Worker loop -------------------------------------------------------
 
 void FrdpEngineCore::runLoop() {
-  // 1ms timeout: keeps frame delivery latency under 2ms.
-  // Do NOT raise — 16ms causes visible input/rendering lag even at 30fps.
+  // Use a short timeout while connecting and a relaxed timeout once connected
+  // to reduce idle CPU wakeups without impacting connect responsiveness.
   constexpr DWORD kMaxEventHandles = 64;
-  constexpr DWORD kWaitTimeoutMs   = 5;
+  constexpr DWORD kWaitTimeoutConnectingMs = 5;
+  constexpr DWORD kWaitTimeoutConnectedMs  = 16;
+  constexpr auto  kNoHandleSleepMs         = std::chrono::milliseconds(8);
 
   while (running_.load()) {
 #if FRDP_HAS_FREERDP
@@ -408,10 +410,13 @@ void FrdpEngineCore::runLoop() {
     }
 
     if (eventCount > 0) {
-      WaitForMultipleObjects(eventCount, handles, FALSE, kWaitTimeoutMs);
+      const DWORD waitTimeout = connected_.load()
+          ? kWaitTimeoutConnectedMs
+          : kWaitTimeoutConnectingMs;
+      WaitForMultipleObjects(eventCount, handles, FALSE, waitTimeout);
     } else {
       // No handles yet (e.g., mid-connect): yield briefly.
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      std::this_thread::sleep_for(kNoHandleSleepMs);
     }
 
     if (!running_.load()) break;
@@ -430,7 +435,7 @@ void FrdpEngineCore::runLoop() {
       break;
     }
 #else
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::this_thread::sleep_for(kNoHandleSleepMs);
 #endif
   }
 }
