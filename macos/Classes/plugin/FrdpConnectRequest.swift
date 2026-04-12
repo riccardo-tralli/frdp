@@ -79,7 +79,17 @@ struct FrdpConnectRequest {
     let customDesktopWidth  = args[FrdpChannel.Arg.customDesktopWidth]  as? Int
     let customDesktopHeight = args[FrdpChannel.Arg.customDesktopHeight] as? Int
     let customConnectionTypeName = args[FrdpChannel.Arg.customConnectionType] as? String
+    let customConnectionTypeValue = FrdpConnectRequest.connectionTypeValue(for: customConnectionTypeName)
     let customColorDepth    = args[FrdpChannel.Arg.customColorDepth]    as? Int
+
+    if let name = customConnectionTypeName, customConnectionTypeValue == nil {
+      return .failure(
+        .invalidArguments(
+          "Unknown customConnectionType '\(name)'. Supported values: " +
+            "modem, broadbandLow, broadbandHigh, satellite, wan, lan, autodetect."
+        )
+      )
+    }
 
     return .success(
       FrdpConnectRequest(
@@ -97,7 +107,7 @@ struct FrdpConnectRequest {
         timeoutMs: clampedTimeout,
         customDesktopWidth: customDesktopWidth,
         customDesktopHeight: customDesktopHeight,
-        customConnectionTypeValue: FrdpConnectRequest.connectionTypeValue(for: customConnectionTypeName),
+        customConnectionTypeValue: customConnectionTypeValue,
         customColorDepth: customColorDepth,
         customDisableWallpaper:        args[FrdpChannel.Arg.customDisableWallpaper]        as? Bool,
         customDisableFullWindowDrag:   args[FrdpChannel.Arg.customDisableFullWindowDrag]   as? Bool,
@@ -120,7 +130,7 @@ struct FrdpConnectRequest {
 
   /// Converts a Dart `FrdpConnectionType.name` string to the numeric
   /// FreeRDP `CONNECTION_TYPE_*` constant (1–7).  Returns `nil` when the
-  /// name is absent, so the caller can skip setting the custom profile.
+  /// name is absent or unknown, so the caller can validate input.
   private static func connectionTypeValue(for name: String?) -> Int? {
     guard let name else { return nil }
     switch name.lowercased() {
@@ -131,7 +141,7 @@ struct FrdpConnectRequest {
     case "wan":           return 5
     case "lan":           return 6
     case "autodetect":    return 7
-    default:              return 2  // broadbandLow fallback
+    default:              return nil
     }
   }
 }
