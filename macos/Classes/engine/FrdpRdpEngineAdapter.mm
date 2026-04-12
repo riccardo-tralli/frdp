@@ -226,6 +226,10 @@ bool FrdpAssignRequiredUtf8(
   _core->sendMacKey(static_cast<int>(keyCode), isDown == YES);
 }
 
+- (void)synchronizeLockStateWithCapsLockEnabled:(BOOL)capsLockEnabled {
+  _core->synchronizeLockState(capsLockEnabled == YES);
+}
+
 // MARK: - Clipboard forwarding ---------------------------------------------
 
 - (void)sendLocalClipboardText:(NSString*)text {

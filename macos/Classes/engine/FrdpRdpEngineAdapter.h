@@ -70,6 +70,8 @@ typedef void (^FrdpConnectionStateDidChangeBlock)(BOOL connected);
 
 - (void)sendMacKeyEventWithKeyCode:(NSInteger)keyCode isDown:(BOOL)isDown;
 
+- (void)synchronizeLockStateWithCapsLockEnabled:(BOOL)capsLockEnabled;
+
 /// Forward local clipboard text to the remote (RDP) host.
 /// Safe to call from any thread; internally dispatched as needed.
 - (void)sendLocalClipboardText:(NSString *)text;

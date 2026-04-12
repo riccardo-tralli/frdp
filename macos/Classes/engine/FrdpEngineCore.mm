@@ -383,6 +383,23 @@ void FrdpEngineCore::sendMacKey(int keyCode, bool isDown) {
 #endif
 }
 
+void FrdpEngineCore::synchronizeLockState(bool capsLockOn) {
+  if (!connected_.load()) return;
+
+#if FRDP_HAS_FREERDP
+  std::lock_guard<std::mutex> lock(stateMutex_);
+  if (!instance_) return;
+  auto* input = instance_->context ? instance_->context->input : nullptr;
+  if (!input) return;
+
+  UINT32 syncFlags = 0;
+  if (capsLockOn) syncFlags |= KBD_SYNC_CAPS_LOCK;
+  freerdp_input_send_synchronize_event(input, syncFlags);
+#else
+  (void)capsLockOn;
+#endif
+}
+
 // MARK: - Clipboard ---------------------------------------------------------
 
 void FrdpEngineCore::sendLocalClipboardText(const std::string& utf8Text) {

@@ -36,6 +36,19 @@ final class FrdpConnectCoordinator {
     }
   }
 
+  private static func synchronizeLocalLockKeys(for session: FrdpSession) {
+    // Use global keyboard lock states (not window-local modifier snapshot)
+    // to avoid stale values right after app activation / focus changes.
+    let capsLockOn = CGEventSource.keyState(.combinedSessionState, key: 57)
+    session.engine.synchronizeLockState(withCapsLockEnabled: capsLockOn)
+
+    // Some servers apply lock state only after the session reaches interactive
+    // input stage; re-apply once shortly after connect.
+    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(250)) {
+      session.engine.synchronizeLockState(withCapsLockEnabled: capsLockOn)
+    }
+  }
+
   func connect(
     request: FrdpConnectRequest,
     sessionStore: FrdpSessionStore,
@@ -129,6 +142,7 @@ final class FrdpConnectCoordinator {
           self.removePending(for: attemptId)
           session.state = FrdpChannel.State.connected
           sessionStore.addSession(session)
+          Self.synchronizeLocalLockKeys(for: session)
 
           // Wire remote clipboard: RDP → NSPasteboard + Flutter event.
           let remoteClipboardCallback = self.onRemoteClipboard

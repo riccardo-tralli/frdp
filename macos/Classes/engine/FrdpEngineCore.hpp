@@ -102,6 +102,9 @@ class FrdpEngineCore {
   // macOS virtual keycode (NSEvent.keyCode) encoding.
   void sendMacKey(int keyCode, bool isDown);
 
+  // Synchronize lock-key state with the remote session.
+  void synchronizeLockState(bool capsLockOn);
+
  private:
   // -------------------------------------------------------------------------
   // Host validation helpers

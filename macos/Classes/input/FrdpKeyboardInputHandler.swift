@@ -6,17 +6,24 @@ import Cocoa
 /// - Main-thread confined (NSEvent access).
 final class FrdpKeyboardInputHandler {
   private let sendMacKey: (Int, Bool) -> Void
+  private let synchronizeLockState: (Bool) -> Void
 
-  init(sendMacKey: @escaping (Int, Bool) -> Void) {
+  init(sendMacKey: @escaping (Int, Bool) -> Void,
+       synchronizeLockState: @escaping (Bool) -> Void) {
     self.sendMacKey = sendMacKey
+    self.synchronizeLockState = synchronizeLockState
   }
 
   func keyDown(_ event: NSEvent) {
-    sendMacKey(Int(event.keyCode), true)
+    let keyCode = Int(event.keyCode)
+    guard keyCode != 57 else { return }
+    sendMacKey(keyCode, true)
   }
 
   func keyUp(_ event: NSEvent) {
-    sendMacKey(Int(event.keyCode), false)
+    let keyCode = Int(event.keyCode)
+    guard keyCode != 57 else { return }
+    sendMacKey(keyCode, false)
   }
 
   /// Returns true if the event was handled, false if caller should forward to super.
@@ -30,7 +37,9 @@ final class FrdpKeyboardInputHandler {
     case 56, 60: isDown = flags.contains(.shift)
     case 58, 61: isDown = flags.contains(.option)
     case 59, 62: isDown = flags.contains(.control)
-    case 57:     isDown = flags.contains(.capsLock)
+    case 57:
+      synchronizeLockState(flags.contains(.capsLock))
+      return true
     default:
       return false
     }

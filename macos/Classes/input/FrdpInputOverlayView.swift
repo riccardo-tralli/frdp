@@ -34,6 +34,13 @@ final class FrdpInputOverlayView: NSView {
         return
       }
       self.engine.sendMacKeyEvent(withKeyCode: keyCode, isDown: isDown)
+    },
+    synchronizeLockState: { [weak self] capsLockOn in
+      guard let self else {
+        FrdpInputOverlayView.logDroppedInput("keyboard-sync")
+        return
+      }
+      self.engine.synchronizeLockState(withCapsLockEnabled: capsLockOn)
     }
   )
 
