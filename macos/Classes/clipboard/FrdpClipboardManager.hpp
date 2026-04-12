@@ -44,7 +44,7 @@ class FrdpClipboardManager {
 
 #if FRDP_HAS_CLIPRDR
   // Called when the cliprdr channel connects (from FrdpEngineCore::onChannelConnected).
-  void initialize(CliprdrClientContext* context);
+  bool initialize(CliprdrClientContext* context);
 #endif
 
   // Called when the cliprdr channel disconnects or the session is torn down.

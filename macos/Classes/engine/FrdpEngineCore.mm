@@ -9,6 +9,7 @@
 #include <cmath>
 #include <chrono>
 #include <future>
+#include <new>
 
 namespace {
 
@@ -123,9 +124,9 @@ bool FrdpEngineCore::validateHostResolvable(const std::string& host,
 
   resolver.join();
 
-  auto [ok, message] = resolveFuture.get();
-  if (!ok) {
-    errorMessage = std::move(message);
+  const auto resolveResult = resolveFuture.get();
+  if (!resolveResult.first) {
+    errorMessage = resolveResult.second;
     return false;
   }
 
@@ -162,7 +163,17 @@ bool FrdpEngineCore::connect(const FrdpFreeRdpConnectConfig& config,
 #if FRDP_HAS_FREERDP
   const bool clipboardEnabled = config.enableClipboard;
   if (clipboardEnabled) {
-    clipboardManager_ = std::make_unique<FrdpClipboardManager>();
+    try {
+      clipboardManager_ = std::make_unique<FrdpClipboardManager>();
+    } catch (const std::bad_alloc&) {
+      errorMessage = "Unable to allocate clipboard manager.";
+      return false;
+    }
+    if (!clipboardManager_) {
+      errorMessage = "Clipboard manager is unavailable.";
+      return false;
+    }
+
     clipboardManager_->setTextReceivedCallback([this](const std::string& utf8Text) {
       ClipboardCallback cb;
       {
@@ -542,9 +553,18 @@ void FrdpEngineCore::onChannelConnected(void* context, const ChannelConnectedEve
 
   if (strcmp(e->name, CLIPRDR_SVC_CHANNEL_NAME) == 0) {
     auto* cliprdrCtx = reinterpret_cast<CliprdrClientContext*>(e->pInterface);
-    if (!cliprdrCtx || !core->clipboardManager_) return;
+    if (!core->clipboardManager_) {
+      NSLog(@"[FRDP] cliprdr connected but clipboard manager is not configured.");
+      return;
+    }
+    if (!cliprdrCtx) {
+      NSLog(@"[FRDP] cliprdr connected with null channel context.");
+      return;
+    }
 
-    core->clipboardManager_->initialize(cliprdrCtx);
+    if (!core->clipboardManager_->initialize(cliprdrCtx)) {
+      NSLog(@"[FRDP] Failed to initialize clipboard manager with cliprdr context.");
+    }
   }
 }
 

@@ -13,13 +13,13 @@ static constexpr UINT32 kCFText = 1;
 // Public API
 // ---------------------------------------------------------------------------
 
-void FrdpClipboardManager::initialize(CliprdrClientContext* context) {
+bool FrdpClipboardManager::initialize(CliprdrClientContext* context) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   context_     = context;
   serverReady_ = false;
 
-  if (!context_) return;
+  if (!context_) return false;
 
   // Store a back-pointer so static callbacks can reach this instance.
   context_->custom = this;
@@ -31,6 +31,8 @@ void FrdpClipboardManager::initialize(CliprdrClientContext* context) {
   context_->ServerFormatListResponse = &FrdpClipboardManager::onServerFormatListResponse;
   context_->ServerFormatDataRequest  = &FrdpClipboardManager::onServerFormatDataRequest;
   context_->ServerFormatDataResponse = &FrdpClipboardManager::onServerFormatDataResponse;
+
+  return true;
 }
 
 void FrdpClipboardManager::uninitialize() {
