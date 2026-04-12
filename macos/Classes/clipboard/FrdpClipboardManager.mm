@@ -176,16 +176,44 @@ UINT FrdpClipboardManager::onServerFormatDataRequest(
     if ((request->requestedFormatId == kCFUnicodeText || request->requestedFormatId == kCFText) &&
         mgr->hasPendingText_) {
       NSString* str = [NSString stringWithUTF8String:mgr->pendingLocalText_.c_str()];
-      if (!str) str = @"";
+      if (!str) {
+        NSData* rawLocal = [NSData dataWithBytes:mgr->pendingLocalText_.data()
+                                          length:mgr->pendingLocalText_.size()];
+        str = [[NSString alloc] initWithData:rawLocal encoding:NSISOLatin1StringEncoding];
+        if (str) {
+          NSLog(@"[FRDP] Local clipboard text is not valid UTF-8; falling back to ISO-8859-1.");
+        } else {
+          NSLog(@"[FRDP] Failed to decode local clipboard text; sending empty payload.");
+          str = @"";
+        }
+      }
 
       NSMutableData* data = nil;
       if (request->requestedFormatId == kCFUnicodeText) {
         // Encode as UTF-16LE, then append a 2-byte null terminator.
         data = [[str dataUsingEncoding:NSUTF16LittleEndianStringEncoding] mutableCopy];
+        if (!data) {
+          NSData* utf8 = [str dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
+          NSString* repaired = utf8 ? [[NSString alloc] initWithData:utf8
+                                                            encoding:NSUTF8StringEncoding] : nil;
+          if (repaired) {
+            data = [[repaired dataUsingEncoding:NSUTF16LittleEndianStringEncoding] mutableCopy];
+            if (data) {
+              NSLog(@"[FRDP] Re-encoded clipboard text with lossy UTF-8 fallback before UTF-16LE.");
+            }
+          }
+        }
       } else {
         // CF_TEXT uses ANSI bytes; Windows CP-1252 is the usual fallback.
         data = [[str dataUsingEncoding:NSWindowsCP1252StringEncoding
                   allowLossyConversion:YES] mutableCopy];
+        if (!data) {
+          data = [[str dataUsingEncoding:NSISOLatin1StringEncoding
+                    allowLossyConversion:YES] mutableCopy];
+          if (data) {
+            NSLog(@"[FRDP] Encoded CF_TEXT clipboard payload using ISO-8859-1 fallback.");
+          }
+        }
       }
       if (!data) data = [NSMutableData data];
       if (request->requestedFormatId == kCFUnicodeText) {
