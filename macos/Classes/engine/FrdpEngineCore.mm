@@ -8,6 +8,31 @@
 #include <cctype>
 #include <cmath>
 #include <chrono>
+#include <future>
+
+namespace {
+
+using Clock = std::chrono::steady_clock;
+
+struct DnsCacheEntry {
+  Clock::time_point resolvedAt;
+};
+
+std::mutex& dnsCacheMutex() {
+  static std::mutex mutex;
+  return mutex;
+}
+
+std::unordered_map<std::string, DnsCacheEntry>& dnsCache() {
+  static std::unordered_map<std::string, DnsCacheEntry> cache;
+  return cache;
+}
+
+std::string dnsCacheKey(const std::string& host, int port) {
+  return host + ":" + std::to_string(port);
+}
+
+} // namespace
 
 // ---------------------------------------------------------------------------
 // FrdpEngineCore — implementation
@@ -52,18 +77,63 @@ bool FrdpEngineCore::normalizeHost(std::string& host, std::string& errorMessage)
 bool FrdpEngineCore::validateHostResolvable(const std::string& host,
                                              int port,
                                              std::string& errorMessage) {
-  struct addrinfo hints {};
-  hints.ai_family   = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
+  constexpr auto kDnsCacheTtl = std::chrono::seconds(30);
+  constexpr auto kDnsResolveTimeout = std::chrono::seconds(2);
 
-  struct addrinfo* result = nullptr;
-  const std::string service = std::to_string(port);
-  const int rc = getaddrinfo(host.c_str(), service.c_str(), &hints, &result);
-  if (rc != 0) {
-    errorMessage = "Host resolution failed for '" + host + "': " + gai_strerror(rc);
+  const auto now = Clock::now();
+  const std::string cacheKey = dnsCacheKey(host, port);
+
+  {
+    std::lock_guard<std::mutex> lock(dnsCacheMutex());
+    auto it = dnsCache().find(cacheKey);
+    if (it != dnsCache().end() && (now - it->second.resolvedAt) < kDnsCacheTtl) {
+      return true;
+    }
+    if (it != dnsCache().end() && (now - it->second.resolvedAt) >= kDnsCacheTtl) {
+      dnsCache().erase(it);
+    }
+  }
+
+  std::promise<std::pair<bool, std::string>> resolvePromise;
+  auto resolveFuture = resolvePromise.get_future();
+
+  std::thread resolver([host, port, promise = std::move(resolvePromise)]() mutable {
+    struct addrinfo hints {};
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    struct addrinfo* result = nullptr;
+    const std::string service = std::to_string(port);
+    const int rc = getaddrinfo(host.c_str(), service.c_str(), &hints, &result);
+    if (rc != 0) {
+      promise.set_value({false, "Host resolution failed for '" + host + "': " + gai_strerror(rc)});
+      return;
+    }
+
+    freeaddrinfo(result);
+    promise.set_value({true, ""});
+  });
+
+  const auto status = resolveFuture.wait_for(kDnsResolveTimeout);
+  if (status != std::future_status::ready) {
+    resolver.detach();
+    errorMessage = "Host resolution timed out for '" + host + "'.";
     return false;
   }
-  freeaddrinfo(result);
+
+  resolver.join();
+
+  auto [ok, message] = resolveFuture.get();
+  if (!ok) {
+    errorMessage = std::move(message);
+    return false;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(dnsCacheMutex());
+    dnsCache()[cacheKey] = DnsCacheEntry{now};
+  }
+
   return true;
 }
 
@@ -71,8 +141,8 @@ bool FrdpEngineCore::validateHostResolvable(const std::string& host,
 
 bool FrdpEngineCore::connect(const FrdpFreeRdpConnectConfig& config,
                               std::string& errorMessage) {
-  // Host validation is pure and blocking (DNS lookup) — do it before
-  // acquiring the state lock to avoid starving send*() callers.
+  // Host validation runs before state lock acquisition. DNS resolution has
+  // a bounded timeout and short-lived cache to avoid repeated long stalls.
   std::string normalizedHost = config.host;
   if (!normalizeHost(normalizedHost, errorMessage)) return false;
   if (!validateHostResolvable(normalizedHost, config.port, errorMessage)) return false;
