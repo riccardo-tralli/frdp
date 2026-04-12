@@ -27,11 +27,17 @@ final class FrdpClipboardMonitor {
     lastChangeCount = NSPasteboard.general.changeCount
   }
 
+  // MARK: - Thread Safety
+
+  // This type is main-thread confined: Timer, NSPasteboard access and mutable
+  // state are expected to be accessed only on DispatchQueue.main.
+
   // MARK: - Start / Stop
 
   /// Begin monitoring.  `onChange` is called on the main thread whenever
   /// new text is found on the pasteboard.
   func start(onChange: @escaping (String) -> Void) {
+    dispatchPrecondition(condition: .onQueue(.main))
     guard timer == nil else { return }
     self.onChange = onChange
     timer = Timer.scheduledTimer(
@@ -44,6 +50,7 @@ final class FrdpClipboardMonitor {
 
   /// Stop monitoring and release the timer.
   func stop() {
+    dispatchPrecondition(condition: .onQueue(.main))
     timer?.invalidate()
     timer = nil
     onChange = nil
@@ -55,12 +62,15 @@ final class FrdpClipboardMonitor {
   /// Call this immediately before writing `text` to NSPasteboard so the
   /// resulting changeCount increment is not forwarded back to the remote.
   func suppressNextChange(matching text: String) {
+    dispatchPrecondition(condition: .onQueue(.main))
     suppressedText = text
   }
 
   // MARK: - Internal
 
   private func checkForChanges() {
+    dispatchPrecondition(condition: .onQueue(.main))
+
     let current = NSPasteboard.general.changeCount
     guard current != lastChangeCount else { return }
     lastChangeCount = current
