@@ -17,10 +17,17 @@ final class FrdpClipboardMonitor {
   // Default polling interval: 250 ms is imperceptible to the user and light
   // on CPU.  Reducing to 100 ms is safe if lower latency is needed.
   private static let pollInterval: TimeInterval = 0.25
+  private static let suppressionWindow: TimeInterval = 1.0
+
+  private struct SuppressedClipboardWrite {
+    let text: String
+    let expectedChangeCount: Int
+    let expiresAt: TimeInterval
+  }
 
   private var timer: Timer?
   private var lastChangeCount: Int
-  private var suppressedText: String?
+  private var suppressedWrite: SuppressedClipboardWrite?
   private var onChange: ((String) -> Void)?
 
   init() {
@@ -54,7 +61,7 @@ final class FrdpClipboardMonitor {
     timer?.invalidate()
     timer = nil
     onChange = nil
-    suppressedText = nil
+    suppressedWrite = nil
   }
 
   // MARK: - Suppression
@@ -63,7 +70,11 @@ final class FrdpClipboardMonitor {
   /// resulting changeCount increment is not forwarded back to the remote.
   func suppressNextChange(matching text: String) {
     dispatchPrecondition(condition: .onQueue(.main))
-    suppressedText = text
+    suppressedWrite = SuppressedClipboardWrite(
+      text: text,
+      expectedChangeCount: NSPasteboard.general.changeCount + 1,
+      expiresAt: ProcessInfo.processInfo.systemUptime + Self.suppressionWindow
+    )
   }
 
   // MARK: - Internal
@@ -78,13 +89,23 @@ final class FrdpClipboardMonitor {
     guard let text = NSPasteboard.general.string(forType: .string),
           !text.isEmpty else { return }
 
-    // Drop the event if it matches the text we just wrote to the pasteboard
-    // from the remote clipboard (avoid sending it right back).
-    if text == suppressedText {
-      suppressedText = nil
-      return
+    if let suppressedWrite {
+      let now = ProcessInfo.processInfo.systemUptime
+      let isExpectedWrite = current == suppressedWrite.expectedChangeCount
+      let isWithinWindow = now <= suppressedWrite.expiresAt
+
+      // Drop only the exact pasteboard mutation we initiated for the remote
+      // clipboard, instead of suppressing by text alone.
+      if isExpectedWrite && isWithinWindow && text == suppressedWrite.text {
+        self.suppressedWrite = nil
+        return
+      }
+
+      if current >= suppressedWrite.expectedChangeCount || !isWithinWindow {
+        self.suppressedWrite = nil
+      }
     }
-    suppressedText = nil
+
     onChange?(text)
   }
 }
