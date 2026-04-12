@@ -1,5 +1,9 @@
 import Cocoa
 
+/// Transparent overlay that captures user input and forwards it to the RDP engine.
+///
+/// Thread-safety:
+/// - Main-thread confined (AppKit view/event lifecycle).
 final class FrdpInputOverlayView: NSView {
   private let engine: FrdpRdpEngineAdapter
   private var trackingAreaRef: NSTrackingArea?

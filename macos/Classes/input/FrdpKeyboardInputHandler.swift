@@ -1,5 +1,9 @@
 import Cocoa
 
+/// Translates AppKit keyboard events into engine callback payloads.
+///
+/// Thread-safety:
+/// - Main-thread confined (NSEvent access).
 final class FrdpKeyboardInputHandler {
   private let sendMacKey: (Int, Bool) -> Void
 

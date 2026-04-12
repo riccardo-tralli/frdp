@@ -1,5 +1,11 @@
 import Foundation
 
+/// Tracks a single asynchronous connect attempt and guarantees one terminal
+/// outcome (resolved/canceled/timedOut).
+///
+/// Thread-safety:
+/// - Public APIs may be called from different queues (main + connect queue).
+/// - Internal state transitions are serialized by `lock`.
 final class FrdpConnectAttempt {
   enum State {
     case pending

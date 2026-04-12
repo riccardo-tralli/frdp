@@ -1,5 +1,10 @@
 import Foundation
 
+/// Parsed connect payload received from Flutter.
+///
+/// Thread-safety:
+/// - Value type with immutable fields after initialization.
+/// - `parse(arguments:)` is pure and side-effect free.
 struct FrdpConnectRequest {
   enum ParseError: Error {
     case invalidArguments(String)

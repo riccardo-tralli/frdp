@@ -1,5 +1,9 @@
 import Cocoa
 
+/// Translates AppKit mouse events into engine callback payloads.
+///
+/// Thread-safety:
+/// - Main-thread confined (NSEvent / NSView usage).
 final class FrdpMouseInputHandler {
   private let sendPointer: (NSPoint, Int) -> Void
   private let sendScroll: (Double, Double) -> Void

@@ -1,6 +1,7 @@
 import Cocoa
 import FlutterMacOS
 
+/// Factory for Flutter platform views. Called by Flutter on the UI thread.
 final class FrdpPlatformViewFactory: NSObject, FlutterPlatformViewFactory {
   private let sessionStore: FrdpSessionStore
 
@@ -17,6 +18,11 @@ final class FrdpPlatformViewFactory: NSObject, FlutterPlatformViewFactory {
   }
 }
 
+/// Native RDP host view.
+///
+/// Thread-safety:
+/// - AppKit view lifecycle is main-thread only.
+/// - Session lookup is thread-safe via FrdpSessionStore.
 final class FrdpPlatformView: NSView {
   private var embeddedView: NSView?
   private var inputOverlay: FrdpInputOverlayView?

@@ -1,5 +1,9 @@
 import Cocoa
 
+/// Detects short trackpad touch gestures and emits synthetic click events.
+///
+/// Thread-safety:
+/// - Main-thread confined (NSEvent / NSView APIs and mutable gesture state).
 final class FrdpTouchTapHandler {
   private let currentLocalPointer: () -> NSPoint
   private let sendPointer: (NSPoint, Int) -> Void

@@ -24,6 +24,12 @@ private final class FrdpClipboardStreamHandler: NSObject, FlutterStreamHandler {
 // FrdpPlugin
 // ---------------------------------------------------------------------------
 
+/// Flutter plugin entrypoint for macOS native bridge.
+///
+/// Thread-safety:
+/// - Method-channel handlers are expected on the main thread.
+/// - Session and connect coordination can cross queues and rely on internal
+///   synchronization in FrdpSessionStore / FrdpConnectCoordinator.
 public class FrdpPlugin: NSObject, FlutterPlugin {
   private let sessionStore = FrdpSessionStore()
   private let connectCoordinator = FrdpConnectCoordinator()
