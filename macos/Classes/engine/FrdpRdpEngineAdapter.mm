@@ -3,6 +3,57 @@
 #import "FrdpRenderContainerView.h"
 #include "FrdpEngineCore.hpp"
 
+namespace {
+
+bool FrdpTryAssignUtf8String(NSString* source, std::string& outValue, const char* fieldName) {
+  if (!source) {
+    outValue.clear();
+    return true;
+  }
+
+  const char* utf8 = source.UTF8String;
+  if (utf8) {
+    outValue = utf8;
+    return true;
+  }
+
+  NSData* lossyData = [source dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
+  if (lossyData) {
+    NSString* repaired = [[NSString alloc] initWithData:lossyData encoding:NSUTF8StringEncoding];
+    const char* repairedUtf8 = repaired.UTF8String;
+    if (repairedUtf8) {
+      outValue = repairedUtf8;
+      NSLog(@"[FRDP] Falling back to lossy UTF-8 conversion for field '%s'.", fieldName);
+      return true;
+    }
+  }
+
+  NSLog(@"[FRDP] Failed UTF-8 conversion for field '%s'.", fieldName);
+  return false;
+}
+
+bool FrdpAssignRequiredUtf8(
+    NSString* source,
+    std::string& outValue,
+    const char* fieldName,
+    NSError* __autoreleasing _Nullable* error) {
+  if (!FrdpTryAssignUtf8String(source, outValue, fieldName) || outValue.empty()) {
+    if (error) {
+      NSString* field = [NSString stringWithUTF8String:fieldName] ?: @"field";
+      *error = [NSError errorWithDomain:@"frdp.engine"
+                                   code:1002
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey:
+                                     [NSString stringWithFormat:@"Invalid %@: unable to encode as UTF-8.", field]
+                               }];
+    }
+    return false;
+  }
+  return true;
+}
+
+} // namespace
+
 // ---------------------------------------------------------------------------
 // FrdpCustomProfileConfig
 // ---------------------------------------------------------------------------
@@ -89,16 +140,22 @@
   customPerformanceConfig:(nullable FrdpCustomProfileConfig*)customConfig
                   error:(NSError* __autoreleasing _Nullable*)error {
   FrdpFreeRdpConnectConfig config;
-  config.host                = host.UTF8String;
+  if (!FrdpAssignRequiredUtf8(host, config.host, "host", error)) return NO;
   config.port                = static_cast<int>(port);
-  config.username            = username.UTF8String;
-  config.password            = password.UTF8String;
-  config.domain              = domain ? domain.UTF8String : "";
+  if (!FrdpAssignRequiredUtf8(username, config.username, "username", error)) return NO;
+  if (!FrdpAssignRequiredUtf8(password, config.password, "password", error)) return NO;
+  if (domain && !FrdpTryAssignUtf8String(domain, config.domain, "domain")) {
+    config.domain.clear();
+  }
   config.ignoreCertificate   = ignoreCertificate == YES;
   config.enableClipboard     = enableClipboard == YES;
   config.disableClipboardPerformanceFallback = disableClipboardPerformanceFallback == YES;
-  config.performanceProfile  = performanceProfile.UTF8String;
-  config.renderingBackend    = renderingBackend.UTF8String;
+  if (!FrdpAssignRequiredUtf8(performanceProfile, config.performanceProfile, "performanceProfile", error)) {
+    return NO;
+  }
+  if (!FrdpAssignRequiredUtf8(renderingBackend, config.renderingBackend, "renderingBackend", error)) {
+    return NO;
+  }
 
   if (customConfig) {
     config.hasCustomPerformanceProfile = true;
