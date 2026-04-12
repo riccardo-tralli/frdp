@@ -1,6 +1,7 @@
 #import "FrdpFrameRenderer.h"
 
 #include <atomic>
+#include <cassert>
 #include <cstdlib>
 #include <cstring>
 
@@ -51,19 +52,35 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
   free(const_cast<void*>(data));
 }
 
-static bool FrdpComputeFrameSize(int width, int height, int stride, size_t* outBytesPerRow, size_t* outFrameBytes) {
-  if (width <= 0 || height <= 0 || stride <= 0) return false;
+static bool FrdpComputeFrameSize(
+    int width,
+    int height,
+    int stride,
+    size_t* outBytesPerRow,
+    size_t* outFrameBytes,
+    const char** outFailureReason) {
+  if (width <= 0 || height <= 0 || stride <= 0) {
+    if (outFailureReason) *outFailureReason = "non-positive width/height/stride";
+    return false;
+  }
 
   constexpr size_t kBytesPerPixel = 4;
   const size_t bytesPerRow = static_cast<size_t>(stride);
   const size_t minBytesPerRow = static_cast<size_t>(width) * kBytesPerPixel;
-  if (bytesPerRow < minBytesPerRow) return false;
+  if (bytesPerRow < minBytesPerRow) {
+    if (outFailureReason) *outFailureReason = "stride smaller than width*bytesPerPixel";
+    return false;
+  }
 
   const size_t h = static_cast<size_t>(height);
-  if (bytesPerRow > (SIZE_MAX / h)) return false;
+  if (bytesPerRow > (SIZE_MAX / h)) {
+    if (outFailureReason) *outFailureReason = "frame byte size overflow";
+    return false;
+  }
 
   *outBytesPerRow = bytesPerRow;
   *outFrameBytes = bytesPerRow * h;
+  if (outFailureReason) *outFailureReason = nullptr;
   return true;
 }
 
@@ -100,7 +117,20 @@ static bool FrdpComputeFrameSize(int width, int height, int stride, size_t* outB
 
   size_t bytesPerRow = 0;
   size_t frameBytes = 0;
-  if (!FrdpComputeFrameSize(width, height, stride, &bytesPerRow, &frameBytes)) {
+  const char* validationFailure = nullptr;
+  if (!FrdpComputeFrameSize(
+          width,
+          height,
+          stride,
+          &bytesPerRow,
+          &frameBytes,
+          &validationFailure)) {
+    assert(false && "FrdpFrameRenderer received invalid frame dimensions/stride");
+    NSLog(@"[FRDP] Dropping invalid frame: width=%d height=%d stride=%d reason=%s",
+          width,
+          height,
+          stride,
+          validationFailure ? validationFailure : "unknown");
     return;
   }
 
