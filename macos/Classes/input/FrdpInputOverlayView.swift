@@ -3,6 +3,7 @@ import Cocoa
 final class FrdpInputOverlayView: NSView {
   private let engine: FrdpRdpEngineAdapter
   private var trackingAreaRef: NSTrackingArea?
+  private weak var managedWindow: NSWindow?
   private var previousAcceptsMouseMovedEvents: Bool?
 
   private lazy var mouseInputHandler = FrdpMouseInputHandler(
@@ -41,6 +42,10 @@ final class FrdpInputOverlayView: NSView {
     fatalError("init(coder:) has not been implemented")
   }
 
+  deinit {
+    restoreWindowMouseMovedEventsIfNeeded()
+  }
+
   override var acceptsFirstResponder: Bool { true }
 
   override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
@@ -63,16 +68,14 @@ final class FrdpInputOverlayView: NSView {
   }
 
   override func viewWillMove(toWindow newWindow: NSWindow?) {
-    if let window, let previousAcceptsMouseMovedEvents {
-      window.acceptsMouseMovedEvents = previousAcceptsMouseMovedEvents
-      self.previousAcceptsMouseMovedEvents = nil
-    }
+    restoreWindowMouseMovedEventsIfNeeded()
     super.viewWillMove(toWindow: newWindow)
   }
 
   override func viewDidMoveToWindow() {
     super.viewDidMoveToWindow()
     guard let window else { return }
+    managedWindow = window
     if previousAcceptsMouseMovedEvents == nil {
       previousAcceptsMouseMovedEvents = window.acceptsMouseMovedEvents
     }
@@ -154,6 +157,13 @@ final class FrdpInputOverlayView: NSView {
   }
 
   // MARK: - Private helpers
+
+  private func restoreWindowMouseMovedEventsIfNeeded() {
+    guard let previousAcceptsMouseMovedEvents else { return }
+    managedWindow?.acceptsMouseMovedEvents = previousAcceptsMouseMovedEvents
+    self.previousAcceptsMouseMovedEvents = nil
+    managedWindow = nil
+  }
 
   private func currentLocalPointer() -> NSPoint {
     guard let window else { return .zero }
