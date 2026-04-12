@@ -326,18 +326,24 @@ void FrdpEngineCore::sendScroll(double deltaX, double deltaY) {
 
   const UINT16 x = lastPointerX_, y = lastPointerY_;
 
-  const auto sendWheel = [&](double delta, UINT16 flag, bool invert) {
-    if (delta == 0.0) return;
-    const bool negative = invert ? (delta > 0.0) : (delta < 0.0);
-    UINT16 magnitude    = static_cast<UINT16>(std::min(std::abs(delta), 255.0));
-    UINT16 flags        = flag | magnitude;
-    if (negative) flags |= PTR_FLAGS_WHEEL_NEGATIVE;
-    freerdp_input_send_mouse_event(input, flags, x, y);
+  const auto sendWheel = [&](double delta, UINT16 wheelFlag, bool negativeWhenPositive) {
+    if (std::abs(delta) <= std::numeric_limits<double>::epsilon()) return;
+
+    const bool negative = negativeWhenPositive ? (delta > 0.0) : (delta < 0.0);
+    UINT16 step = static_cast<UINT16>(std::min(std::lround(std::abs(delta) * 120.0), 255l));
+    if (step == 0) return;
+
+    UINT16 flags = wheelFlag;
+    if (negative) {
+      flags |= PTR_FLAGS_WHEEL_NEGATIVE;
+      step = static_cast<UINT16>(0x100 - step);
+    }
+
+    freerdp_input_send_mouse_event(input, static_cast<UINT16>(flags | step), x, y);
   };
 
-  // AppKit positive deltaY is scroll-up; RDP uses the NEGATIVE flag for down.
-  sendWheel(deltaY, PTR_FLAGS_WHEEL,  true);
-  sendWheel(deltaX, PTR_FLAGS_HWHEEL, false);
+  sendWheel(deltaY, PTR_FLAGS_WHEEL, false);
+  sendWheel(deltaX, PTR_FLAGS_HWHEEL, true);
 #endif
 }
 

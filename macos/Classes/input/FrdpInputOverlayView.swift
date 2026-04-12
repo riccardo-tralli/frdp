@@ -138,6 +138,9 @@ final class FrdpInputOverlayView: NSView {
   override func mouseMoved(with event: NSEvent) { mouseInputHandler.handlePointerEvent(event, in: self) }
 
   override func scrollWheel(with event: NSEvent) {
+    if event.deltaX != 0 || event.deltaY != 0 {
+      touchTapHandler.cancelTapRecognition()
+    }
     mouseInputHandler.handleScrollEvent(event, in: self)
   }
 

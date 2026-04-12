@@ -21,7 +21,12 @@ final class FrdpMouseInputHandler {
 
   func handleScrollEvent(_ event: NSEvent, in view: NSView) {
     handlePointerEvent(event, in: view)
-    sendScroll(event.scrollingDeltaX, event.scrollingDeltaY)
+
+    let deltaX = Double(event.deltaX)
+    let deltaY = Double(event.deltaY)
+    guard deltaX != 0 || deltaY != 0 else { return }
+
+    sendScroll(deltaX, deltaY)
   }
 
   private static func buttonsMask(from nativeMask: Int) -> Int {

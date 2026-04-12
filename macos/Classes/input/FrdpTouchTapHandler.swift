@@ -13,6 +13,7 @@ final class FrdpTouchTapHandler {
   private var tapCandidateStartTime: TimeInterval = 0
   private var tapCandidateStartPoint: NSPoint = .zero
   private var tapCandidateButtons = 0
+  private var tapRecognitionSuppressedUntil: TimeInterval = 0
 
   init(currentLocalPointer: @escaping () -> NSPoint,
        sendPointer: @escaping (NSPoint, Int) -> Void) {
@@ -21,7 +22,12 @@ final class FrdpTouchTapHandler {
   }
 
   func touchesBegan(_ event: NSEvent, in view: NSView) {
+    let now = ProcessInfo.processInfo.systemUptime
     let touching = event.touches(matching: .touching, in: view)
+    guard now >= tapRecognitionSuppressedUntil else {
+      tapCandidateActive = false
+      return
+    }
     guard (NSEvent.pressedMouseButtons & 0x1) == 0 else {
       tapCandidateActive = false
       return
@@ -40,7 +46,7 @@ final class FrdpTouchTapHandler {
 
     tapCandidateActive = true
     tapCandidateMoved = false
-    tapCandidateStartTime = ProcessInfo.processInfo.systemUptime
+    tapCandidateStartTime = now
     tapCandidateStartPoint = currentLocalPointer()
     tapCandidateButtons = tapButtons
   }
@@ -77,5 +83,14 @@ final class FrdpTouchTapHandler {
 
   func touchesCancelled(_ event: NSEvent, in view: NSView) {
     tapCandidateActive = false
+  }
+
+  func cancelTapRecognition(suppressingFor duration: TimeInterval = 0.18) {
+    tapCandidateActive = false
+    tapCandidateMoved = false
+    tapRecognitionSuppressedUntil = max(
+      tapRecognitionSuppressedUntil,
+      ProcessInfo.processInfo.systemUptime + duration
+    )
   }
 }
