@@ -9,7 +9,14 @@ import FlutterMacOS
 /// - pendingConnectAttempts/pendingConnectCancels are protected by pendingLock,
 ///   because they are touched by timeout callbacks, cancel requests and connect
 ///   completion paths.
+///
+/// Session lifecycle:
+/// - A connected session is added to FrdpSessionStore.
+/// - When a session transitions to a terminal state without explicit
+///   disconnect, a delayed cleanup pass removes stale sessions.
 final class FrdpConnectCoordinator {
+  private static let staleSessionCleanupDelayMs = 30_000
+
   private let connectQueue = DispatchQueue(label: "it.riccardotralli.frdp.connect", qos: .userInitiated)
   private let pendingLock = NSLock()
   private var pendingConnectAttempts: [String: FrdpConnectAttempt] = [:]
@@ -50,6 +57,7 @@ final class FrdpConnectCoordinator {
         }
       } else {
         session.clipboardMonitor.stop()
+        Self.scheduleStaleSessionCleanup(session: session, sessionStore: sessionStore)
       }
     }
 
@@ -160,6 +168,13 @@ final class FrdpConnectCoordinator {
   }
 
   // MARK: - Private helpers
+
+  private static func scheduleStaleSessionCleanup(session: FrdpSession, sessionStore: FrdpSessionStore) {
+    let sessionId = session.sessionId
+    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(staleSessionCleanupDelayMs)) {
+      _ = sessionStore.removeSessionIfTerminal(id: sessionId, matching: session)
+    }
+  }
 
   /// Stores a connect attempt in the pending map.
   private func setPendingAttempt(_ attempt: FrdpConnectAttempt, for attemptId: String) {

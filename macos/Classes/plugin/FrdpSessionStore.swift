@@ -67,6 +67,35 @@ final class FrdpSessionStore {
     sessions[id] = nil
   }
 
+  /// Removes a specific session only if it is still the registered one and is
+  /// already in a terminal state.
+  ///
+  /// This is used for deferred lifecycle cleanup so we do not accidentally
+  /// remove a newer session bound to the same identifier.
+  /// - Parameters:
+  ///   - id: The session identifier to inspect.
+  ///   - matching: The exact session instance expected in the store.
+  /// - Returns: true if a session was removed, false otherwise.
+  @discardableResult
+  func removeSessionIfTerminal(id: String, matching session: FrdpSession) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+
+    guard let existing = sessions[id], existing === session else {
+      return false
+    }
+
+    let isTerminal = existing.state == FrdpChannel.State.disconnected
+      || existing.state == FrdpChannel.State.error
+    guard isTerminal else {
+      return false
+    }
+
+    existing.engine.disconnect()
+    sessions[id] = nil
+    return true
+  }
+
   /// Removes all sessions and disconnects them.
   ///
   /// Thread-safe for concurrent access. Iterates through all sessions,
