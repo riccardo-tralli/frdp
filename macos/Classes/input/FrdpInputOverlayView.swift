@@ -8,25 +8,45 @@ final class FrdpInputOverlayView: NSView {
 
   private lazy var mouseInputHandler = FrdpMouseInputHandler(
     sendPointer: { [weak self] point, buttons in
-      self?.forwardPointer(at: point, buttons: buttons)
+      guard let self else {
+        FrdpInputOverlayView.logDroppedInput("pointer")
+        return
+      }
+      self.forwardPointer(at: point, buttons: buttons)
     },
     sendScroll: { [weak self] deltaX, deltaY in
-      self?.engine.sendScrollEvent(withDeltaX: deltaX, deltaY: deltaY)
+      guard let self else {
+        FrdpInputOverlayView.logDroppedInput("scroll")
+        return
+      }
+      self.engine.sendScrollEvent(withDeltaX: deltaX, deltaY: deltaY)
     }
   )
 
   private lazy var keyboardInputHandler = FrdpKeyboardInputHandler(
     sendMacKey: { [weak self] keyCode, isDown in
-      self?.engine.sendMacKeyEvent(withKeyCode: keyCode, isDown: isDown)
+      guard let self else {
+        FrdpInputOverlayView.logDroppedInput("keyboard")
+        return
+      }
+      self.engine.sendMacKeyEvent(withKeyCode: keyCode, isDown: isDown)
     }
   )
 
   private lazy var touchTapHandler = FrdpTouchTapHandler(
     currentLocalPointer: { [weak self] in
-      self?.currentLocalPointer() ?? .zero
+      guard let self else {
+        FrdpInputOverlayView.logDroppedInput("touch")
+        return .zero
+      }
+      return self.currentLocalPointer()
     },
     sendPointer: { [weak self] point, buttons in
-      self?.forwardPointer(at: point, buttons: buttons)
+      guard let self else {
+        FrdpInputOverlayView.logDroppedInput("touch-pointer")
+        return
+      }
+      self.forwardPointer(at: point, buttons: buttons)
     }
   )
 
@@ -157,6 +177,10 @@ final class FrdpInputOverlayView: NSView {
   }
 
   // MARK: - Private helpers
+
+  private static func logDroppedInput(_ kind: String) {
+    NSLog("[FRDP] Dropping %@ input event because input overlay was released.", kind)
+  }
 
   private func restoreWindowMouseMovedEventsIfNeeded() {
     guard let previousAcceptsMouseMovedEvents else { return }
