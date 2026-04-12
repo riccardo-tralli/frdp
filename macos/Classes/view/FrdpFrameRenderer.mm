@@ -51,6 +51,22 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
   free(const_cast<void*>(data));
 }
 
+static bool FrdpComputeFrameSize(int width, int height, int stride, size_t* outBytesPerRow, size_t* outFrameBytes) {
+  if (width <= 0 || height <= 0 || stride <= 0) return false;
+
+  constexpr size_t kBytesPerPixel = 4;
+  const size_t bytesPerRow = static_cast<size_t>(stride);
+  const size_t minBytesPerRow = static_cast<size_t>(width) * kBytesPerPixel;
+  if (bytesPerRow < minBytesPerRow) return false;
+
+  const size_t h = static_cast<size_t>(height);
+  if (bytesPerRow > (SIZE_MAX / h)) return false;
+
+  *outBytesPerRow = bytesPerRow;
+  *outFrameBytes = bytesPerRow * h;
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // FrdpFrameRenderer
 // ---------------------------------------------------------------------------
@@ -80,18 +96,22 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
                       width:(int)width
                      height:(int)height
                      stride:(int)stride {
-  if (data == nullptr || width <= 0 || height <= 0 || stride <= 0) return;
+  if (data == nullptr) return;
+
+  size_t bytesPerRow = 0;
+  size_t frameBytes = 0;
+  if (!FrdpComputeFrameSize(width, height, stride, &bytesPerRow, &frameBytes)) {
+    return;
+  }
 
   bool expected = false;
-  if (!_pending.compare_exchange_strong(expected, true)) {
+  if (!_pending.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
     return; // previous frame still in flight — drop this one
   }
 
-  const size_t bytesPerRow = static_cast<size_t>(stride);
-  const size_t frameBytes  = bytesPerRow * static_cast<size_t>(height);
   uint8_t* copied = static_cast<uint8_t*>(malloc(frameBytes));
   if (copied == nullptr) {
-    _pending.store(false);
+    _pending.store(false, std::memory_order_release);
     return;
   }
   memcpy(copied, data, frameBytes);
@@ -106,7 +126,7 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
     if (provider == nullptr) {
       free(copied);
       FrdpFrameRenderer* s = weakSelf;
-      if (s) s->_pending.store(false);
+      if (s) s->_pending.store(false, std::memory_order_release);
       return;
     }
 
@@ -127,7 +147,7 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
 
     if (image == nullptr) {
       FrdpFrameRenderer* s = weakSelf;
-      if (s) s->_pending.store(false);
+      if (s) s->_pending.store(false, std::memory_order_release);
       return;
     }
 
@@ -135,7 +155,7 @@ static void FrdpReleaseFrameBuffer(void* /*info*/, const void* data, size_t /*si
       FrdpFrameRenderer* s = weakSelf;
       if (s) {
         [s->_frameView updateImage:image];
-        s->_pending.store(false);
+        s->_pending.store(false, std::memory_order_release);
       }
       CGImageRelease(image);
     });
