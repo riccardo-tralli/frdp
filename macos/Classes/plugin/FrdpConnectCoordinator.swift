@@ -2,8 +2,16 @@ import Foundation
 import AppKit
 import FlutterMacOS
 
+/// Coordinates asynchronous RDP connection attempts.
+///
+/// Thread-safety:
+/// - connectQueue performs blocking engine connect operations off the main thread.
+/// - pendingConnectAttempts/pendingConnectCancels are protected by pendingLock,
+///   because they are touched by timeout callbacks, cancel requests and connect
+///   completion paths.
 final class FrdpConnectCoordinator {
   private let connectQueue = DispatchQueue(label: "it.riccardotralli.frdp.connect", qos: .userInitiated)
+  private let pendingLock = NSLock()
   private var pendingConnectAttempts: [String: FrdpConnectAttempt] = [:]
   private var pendingConnectCancels: [String: () -> Void] = [:]
 
@@ -50,11 +58,10 @@ final class FrdpConnectCoordinator {
     let attempt = FrdpConnectAttempt()
     let attemptId = attempt.attemptId
 
-    pendingConnectAttempts[attemptId] = attempt
+    setPendingAttempt(attempt, for: attemptId)
 
     attempt.scheduleTimeout(afterMs: request.timeoutMs) { [weak self, weak session] in
-      self?.pendingConnectAttempts.removeValue(forKey: attemptId)
-      self?.pendingConnectCancels.removeValue(forKey: attemptId)
+      self?.removePending(for: attemptId)
       session?.state = FrdpChannel.State.error
       result(
         FlutterError(
@@ -65,11 +72,10 @@ final class FrdpConnectCoordinator {
       )
     }
 
-    pendingConnectCancels[attemptId] = { [weak self, weak session] in
+    let cancelClosure: () -> Void = { [weak self, weak session] in
       guard attempt.cancel() else { return }
 
-      self?.pendingConnectAttempts.removeValue(forKey: attemptId)
-      self?.pendingConnectCancels.removeValue(forKey: attemptId)
+      self?.removePending(for: attemptId)
       session?.state = FrdpChannel.State.disconnected
       result(
         FlutterError(
@@ -79,6 +85,8 @@ final class FrdpConnectCoordinator {
         )
       )
     }
+
+    setPendingCancel(cancelClosure, for: attemptId)
 
     // Build the optional custom performance config before jumping to the
     // background queue so we avoid any threading concerns with the struct.
@@ -110,8 +118,7 @@ final class FrdpConnectCoordinator {
             return
           }
 
-          self.pendingConnectAttempts.removeValue(forKey: attemptId)
-          self.pendingConnectCancels.removeValue(forKey: attemptId)
+          self.removePending(for: attemptId)
           session.state = FrdpChannel.State.connected
           sessionStore.addSession(session)
 
@@ -139,8 +146,7 @@ final class FrdpConnectCoordinator {
             return
           }
 
-          self?.pendingConnectAttempts.removeValue(forKey: attemptId)
-          self?.pendingConnectCancels.removeValue(forKey: attemptId)
+          self?.removePending(for: attemptId)
           session.state = FrdpChannel.State.error
           result(FlutterError(code: "RDP_CONNECT_FAILED", message: error.localizedDescription, details: nil))
         }
@@ -149,12 +155,44 @@ final class FrdpConnectCoordinator {
   }
 
   func cancelAllPending() {
-    let cancelPending = Array(pendingConnectCancels.values)
-    pendingConnectCancels.removeAll()
+    let cancelPending = drainPendingCancels()
     cancelPending.forEach { $0() }
   }
 
   // MARK: - Private helpers
+
+  /// Stores a connect attempt in the pending map.
+  private func setPendingAttempt(_ attempt: FrdpConnectAttempt, for attemptId: String) {
+    pendingLock.lock()
+    defer { pendingLock.unlock() }
+    pendingConnectAttempts[attemptId] = attempt
+  }
+
+  /// Stores the cancellation closure for an attempt.
+  private func setPendingCancel(_ cancel: (() -> Void)?, for attemptId: String) {
+    guard let cancel else { return }
+    pendingLock.lock()
+    defer { pendingLock.unlock() }
+    pendingConnectCancels[attemptId] = cancel
+  }
+
+  /// Removes both pending maps for a given attempt id atomically.
+  private func removePending(for attemptId: String) {
+    pendingLock.lock()
+    defer { pendingLock.unlock() }
+    pendingConnectAttempts.removeValue(forKey: attemptId)
+    pendingConnectCancels.removeValue(forKey: attemptId)
+  }
+
+  /// Drains cancel closures atomically so callers can execute them without
+  /// holding the lock.
+  private func drainPendingCancels() -> [() -> Void] {
+    pendingLock.lock()
+    defer { pendingLock.unlock() }
+    let cancelPending = Array(pendingConnectCancels.values)
+    pendingConnectCancels.removeAll()
+    return cancelPending
+  }
 
   private static func buildCustomConfig(from request: FrdpConnectRequest) -> FrdpCustomProfileConfig {
     let config = FrdpCustomProfileConfig()
