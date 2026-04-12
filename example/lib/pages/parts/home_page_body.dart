@@ -39,10 +39,7 @@ Widget _homePageBody({
     ),
     Expanded(
       flex: 7,
-      child: _rdpView(
-        context: context,
-        sessionId: (state is RdpSessionConnectedState) ? state.id : "",
-      ),
+      child: _rdpView(context: context, state: state),
     ),
   ],
 );

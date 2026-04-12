@@ -58,7 +58,7 @@ Widget _badge(RdpSessionState state) {
   }
   if (state is RdpSessionErrorState) {
     return IconChip(
-      label: "Error: ${state.message}",
+      label: "Error",
       icon: HugeIcons.strokeRoundedToggleOff,
       type: IconChipType.error,
     );
