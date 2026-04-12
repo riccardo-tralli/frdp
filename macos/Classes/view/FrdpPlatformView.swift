@@ -20,6 +20,7 @@ final class FrdpPlatformViewFactory: NSObject, FlutterPlatformViewFactory {
 final class FrdpPlatformView: NSView {
   private var embeddedView: NSView?
   private var inputOverlay: FrdpInputOverlayView?
+  private var placeholderLabel: NSTextField?
 
   init(frame: NSRect, viewId: Int64, args: Any?, sessionStore: FrdpSessionStore) {
     super.init(frame: frame)
@@ -39,9 +40,15 @@ final class FrdpPlatformView: NSView {
     fatalError("init(coder:) has not been implemented")
   }
 
+  deinit {
+    detachCurrentContent()
+  }
+
   // MARK: - Private helpers
 
   private func attachSession(_ session: FrdpSession) {
+    detachCurrentContent()
+
     let view = session.engine.renderView
     view.translatesAutoresizingMaskIntoConstraints = false
     addSubview(view)
@@ -65,13 +72,27 @@ final class FrdpPlatformView: NSView {
   }
 
   private func showPlaceholder() {
+    detachCurrentContent()
+
     let label = NSTextField(labelWithString: "RDP session not found")
     label.textColor = .white
     label.translatesAutoresizingMaskIntoConstraints = false
     addSubview(label)
+    placeholderLabel = label
     NSLayoutConstraint.activate([
       label.centerXAnchor.constraint(equalTo: centerXAnchor),
       label.centerYAnchor.constraint(equalTo: centerYAnchor),
     ])
+  }
+
+  private func detachCurrentContent() {
+    placeholderLabel?.removeFromSuperview()
+    placeholderLabel = nil
+
+    inputOverlay?.removeFromSuperview()
+    inputOverlay = nil
+
+    embeddedView?.removeFromSuperview()
+    embeddedView = nil
   }
 }
