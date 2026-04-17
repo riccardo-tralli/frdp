@@ -11,7 +11,8 @@ enum FrdpPerformanceProfile {
   high,
 
   /// Custom performance profile, where all settings are configured manually via
-  /// [FrdpCustomPerformanceProfile].  When selected, the [customPerformanceProfile]
-  /// field of [FrdpConnectionConfig] must be set with the desired settings.
+  /// [FrdpCustomPerformanceProfile].  When selected, the
+  /// [FrdpConnectionConfig.customPerformanceProfile] must be set with the
+  /// desired settings.
   custom,
 }
