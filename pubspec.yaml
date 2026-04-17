@@ -1,9 +1,13 @@
 name: frdp
 description: 'Flutter plugin for Remote Desktop Protocol (RDP) connections'
-version: 0.0.1
+version: 0.1.0
 homepage: https://github.com/riccardo-tralli/frdp
 repository: https://github.com/riccardo-tralli/frdp/tree/main
 issue_tracker: https://github.com/riccardo-tralli/frdp/issues
+topics:
+    - rdp
+    - remote-desktop
+    - utils
 
 environment:
     sdk: ^3.10.4

@@ -1,23 +1,18 @@
-# frdp
-
-[![dart version](https://img.shields.io/badge/dart-%3E%3D3.10.4-0175C2)](https://dart.dev)
-[![flutter version](https://img.shields.io/badge/flutter-%3E%3D3.3.0-02569B)](https://flutter.dev)
-
 [![macOS support](https://img.shields.io/badge/macOS-supported-2EA44F)](https://github.com/riccardo-tralli/frdp)
 [![Linux support](https://img.shields.io/badge/Linux-not%20supported%20yet-BD561D)](https://github.com/riccardo-tralli/frdp)
 [![Windows support](https://img.shields.io/badge/Windows-not%20supported%20yet-BD561D)](https://github.com/riccardo-tralli/frdp)
 
 A Flutter plugin for Remote Desktop Protocol (RDP) connections.
 
-`frdp` features:
+Features:
 
-- A Dart API to open and manage RDP sessions.
-- A native macOS platform view widget to render the remote desktop in Flutter.
+- Dart APIs to open and manage RDP sessions.
+- Native macOS platform view widget to render the remote desktop in Flutter.
 - Input forwarding for keyboard, mouse, and touchpad events.
 - Bidirectional clipboard support.
-- Support for GDI and GFX rendering backends.
+- GDI and GFX rendering backends support.
 
-![demo](docs/assets/demo.gif)
+![demo](doc/assets/demo.gif)
 
 ## ‼️ Development status (Early Stage) ‼️
 
@@ -31,16 +26,20 @@ If you adopt `frdp` now, pin a specific commit or version and test upgrades befo
 
 ## Platform support
 
-- macOS: supported ✅
-- Windows: planned 🗓️
-- Linux: planned 🗓️
-- iOS: not planned ❌
-- Android: not planned ❌
-- Web: not planned ❌
+|    macOS     |  Windows   |   Linux    |      iOS       |    Android     |      Web       |
+| :----------: | :--------: | :--------: | :------------: | :------------: | :------------: |
+| supported ✅ | planned 🗓️ | planned 🗓️ | not planned ❌ | not planned ❌ | not planned ❌ |
 
 ## Installation
 
 Add the dependency to your `pubspec.yaml`.
+
+### From pub.dev
+
+```yaml
+dependencies:
+    frdp: ^0.1.0
+```
 
 ### From GitHub
 
@@ -66,7 +65,7 @@ Then run:
 flutter pub get
 ```
 
-## Quick start
+## Get started
 
 Import the package:
 
